@@ -1,5 +1,8 @@
 # 台灣股票技術分析推薦系統
 
+[![Tests](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/test.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jasonxwlin/tw-stock-recommender.svg)](https://codecov.io/github/jasonxwlin/tw-stock-recommender)
+
 以**歷史回測驅動**的台灣股票分析工具，整合為 Claude Code Skill。
 輸入一個或多個台灣股票代號，自動分析技術指標 + 三大法人籌碼 + 市場多空趨勢，輸出未來一週的倉位建議：**加碼 / 持平 / 減碼**。
 

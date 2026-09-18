@@ -1,4 +1,5 @@
 .env
 .coverage
+coverage.xml
 __pycache__/
 .idea/
