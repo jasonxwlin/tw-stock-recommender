@@ -15,7 +15,7 @@
 
 ### 前置需求
 
-- Python 3.9 以上
+- [uv](https://docs.astral.sh/uv/)（Python 套件與虛擬環境管理工具；會自動處理 Python 3.9+ 版本）
 - [Claude Code](https://claude.ai/code) CLI（用於 Skill）
 
 ### 步驟
@@ -25,8 +25,9 @@
 git clone https://github.com/YOUR_USERNAME/stock-recommender.git
 cd stock-recommender
 
-# 2. 安裝 Python 套件
-pip install -r requirements.txt
+# 2. 建立虛擬環境並安裝套件
+uv venv
+uv pip install -r requirements.txt
 
 # 3. 用 Claude Code 開啟此目錄
 claude .
@@ -57,8 +58,8 @@ Claude 會執行分析並以中文提供：
 ### 方式二：直接執行 Python Script
 
 ```bash
-python3 tech_analysis.py 2330
-python3 tech_analysis.py 2330 2317 0050
+uv run python3 tech_analysis.py 2330
+uv run python3 tech_analysis.py 2330 2317 0050
 ```
 
 ---
@@ -244,8 +245,8 @@ python3 tech_analysis.py 2330 2317 0050
 `backtest_annual.py` 模擬過去 3 年，每天依 skill 信號調整倉位，驗證策略實際績效。
 
 ```bash
-python3 backtest_annual.py 2330
-python3 backtest_annual.py 2317
+uv run python3 backtest_annual.py 2330
+uv run python3 backtest_annual.py 2317
 ```
 
 ### 倉位模型
