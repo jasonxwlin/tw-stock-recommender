@@ -4,8 +4,11 @@ math (the non-trivial branch/loop logic added for the TXF futures overlay,
 covering both the net-position and gross-short-OI signals).
 No network calls — TWII prices and the on-disk cache are both faked.
 """
-import json
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import json
 from unittest import mock
 
 import numpy as np
@@ -105,13 +108,3 @@ def test_blocked_fetch_degrades_gracefully(tmp_path):
     assert result["bonus"] == 0.0
     assert result["short_bonus"] == 0.0
     assert not cache_file.exists() or json.loads(cache_file.read_text()) == {}
-
-
-if __name__ == "__main__":
-    import tempfile
-    for name, fn in list(globals().items()):
-        if name.startswith("test_"):
-            with tempfile.TemporaryDirectory() as d:
-                fn(Path(d))
-            print(f"OK  {name}")
-    print("all checks passed")

@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Self-check for fundamentals.py's parsing/date-math/cache-throttling helpers (ponytail: non-trivial regex + branching logic)."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import tempfile
 from datetime import date
-from pathlib import Path
 import fundamentals as f
 from fundamentals import _parse_revenue_yoy, _months_back, _roc_year
 
@@ -80,12 +83,3 @@ def test_valuation_snapshot_has_no_percentile_field():
     finally:
         f._fetch_pe_pb_twse_month = orig_fetch
         f._VALUATION_CACHE_FILE = orig_cache_file
-
-
-if __name__ == "__main__":
-    test_parse_revenue_yoy_finds_target_stock_only()
-    test_months_back_walks_backward_across_year_boundary()
-    test_roc_year()
-    test_valuation_cache_backfills_one_past_month_per_call()
-    test_valuation_snapshot_has_no_percentile_field()
-    print("OK: all fundamentals parser checks passed")

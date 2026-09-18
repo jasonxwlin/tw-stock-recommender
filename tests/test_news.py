@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Self-check for news.py's parsing/filtering helpers (ponytail: non-trivial regex + date-cutoff logic)."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from datetime import date, datetime, timezone
 from news import _parse_google_news_xml, _parse_yahoo_news_items
 
@@ -49,10 +53,3 @@ def test_limit_is_respected():
     cutoff = datetime(2020, 1, 1, tzinfo=timezone.utc)
     items = _parse_google_news_xml(GOOGLE_XML_FIXTURE, cutoff, limit=1)
     assert len(items) == 1
-
-
-if __name__ == "__main__":
-    test_parse_google_news_filters_by_cutoff_and_splits_source()
-    test_parse_yahoo_news_filters_by_cutoff_and_skips_missing_date()
-    test_limit_is_respected()
-    print("OK: all news parser checks passed")

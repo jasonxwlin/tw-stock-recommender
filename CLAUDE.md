@@ -29,14 +29,14 @@ python3 news.py 2330
 # Run 3-year walk-forward backtest for a stock
 python3 backtest_annual.py 2330
 
-# Self-checks for the macro-event, fundamentals, news, and summary-table sort logic
-python3 test_macro_events.py
-python3 test_fundamentals.py
-python3 test_news.py
-python3 test_tech_analysis.py
+# Run all self-checks under pytest, with coverage (gated at >=90% via pytest.ini)
+# Each file is also directly runnable via `python3 tests/test_x.py` — same
+# assert-based tests, no pytest required for that path (network-mocked tests
+# that need pytest fixtures print SKIP when run that way; use `pytest` for those)
+pytest
 ```
 
-No build step — `test_*.py` are lightweight assert-based self-checks for parsing logic only (see "Self-checks" below), not a full test suite. Primary validation is still running the scripts directly and observing output.
+No build step — `tests/test_*.py` are assert-based self-checks covering both pure logic (parsing, scoring math, condition/backtest engine) and network-facing `fetch_*` functions (mocked at the `requests`/`yfinance` boundary — no real network calls). `tests/test_*_core.py` / `tests/test_*.py` cover pure logic; `tests/test_*_network.py` covers the mocked fetchers, `fmt_report`, and `main()`. Coverage across `tech_analysis.py`/`fundamentals.py`/`news.py` is ~96% and enforced at >=90% by `pytest.ini`. They run under `pytest` (auto-discovered from `tests/`) or standalone via `python3 tests/test_x.py`.
 
 ## Architecture
 
@@ -79,7 +79,7 @@ Also independent, also imports ticker resolution from `tech_analysis.py`. Unlike
 - `fetch_google_news()` — Traditional Chinese headlines from Google News RSS (public feed, queried by company name), trailing 7 days.
 - `fetch_yahoo_news()` — English headlines from yfinance's `Ticker.news`, trailing 7 days, mostly US/global-investor angle.
 
-Both parsing functions (`_parse_google_news_xml`, `_parse_yahoo_news_items`) are separated from their network calls so they're unit-testable (see `test_news.py`); both fail independently and silently like the other modules.
+Both parsing functions (`_parse_google_news_xml`, `_parse_yahoo_news_items`) are separated from their network calls so they're unit-testable (see `tests/test_news.py`); both fail independently and silently like the other modules.
 
 ### `backtest_annual.py` — strategy simulation
 

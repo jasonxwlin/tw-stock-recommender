@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Self-check for the FOMC/PCE HTML parsers in tech_analysis.py (ponytail: non-trivial regex parsing)."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from datetime import date
 from tech_analysis import _parse_fomc_events, _parse_bea_events, _parse_month_day
 
@@ -61,10 +65,3 @@ def test_parse_bea_events_filters_and_labels_rows():
     events.sort(key=lambda e: e['date'])
     assert [e['date'] for e in events] == [date(2026, 9, 24), date(2026, 9, 30)]
     assert [e['name'] for e in events] == ['美國GDP公布', '美國PCE物價指數公布']
-
-
-if __name__ == "__main__":
-    test_parse_month_day()
-    test_parse_fomc_events_window()
-    test_parse_bea_events_filters_and_labels_rows()
-    print("OK: all macro_events parser checks passed")
