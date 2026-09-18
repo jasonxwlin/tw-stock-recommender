@@ -17,6 +17,7 @@ Walk-Forward 3-Year Backtest with Position Sizing
 """
 
 from __future__ import annotations
+import argparse
 import sys
 import warnings
 warnings.filterwarnings('ignore')
@@ -33,7 +34,6 @@ from tech_analysis import (
     compute_outcomes,
     backtest_conditions,
     baseline_stats,
-    _group_of,
 )
 
 # ─── 常數 ─────────────────────────────────────────────────────────────────────
@@ -111,10 +111,10 @@ STRONG_BULL_BONUS = 0.25
 # - Tighten sell threshold in bull markets → avoid false exits during trends
 # - Bear/neutral markets: keep original thresholds to prevent whipsaw on noisy signals
 REGIME_PARAMS: dict[float, dict] = {
-     0.25: dict(add=0.25, reduce=-0.40, strong=-0.80, move=0.020, start=3),  # 強多頭 → 75%
-     0.15: dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015, start=2),  # 多頭   → 50%
-     0.00: dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015, start=2),  # 中性   → 50%
-    -0.15: dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015, start=2),  # 空頭   → 50%
+     0.25: {"add": 0.25, "reduce": -0.40, "strong": -0.80, "move": 0.020, "start": 3},  # 強多頭 → 75%
+     0.15: {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015, "start": 2},  # 多頭   → 50%
+     0.00: {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015, "start": 2},  # 中性   → 50%
+    -0.15: {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015, "start": 2},  # 空頭   → 50%
 }
 _DEFAULT_PARAMS = REGIME_PARAMS[0.00]
 
@@ -143,10 +143,14 @@ def get_signal(window: pd.DataFrame, regime_bonus: float = 0.0) -> tuple[str, fl
 
         score = sum(s['weight'] for s in group_best.values()) + regime_bonus
 
-        if score >= 0.60:          return '強力加碼', score
-        if score >= p['add']:      return '加碼',     score
-        if score <= p['strong']:   return '強力減碼', score
-        if score <= p['reduce']:   return '減碼',     score
+        if score >= 0.60:
+            return '強力加碼', score
+        if score >= p['add']:
+            return '加碼', score
+        if score <= p['strong']:
+            return '強力減碼', score
+        if score <= p['reduce']:
+            return '減碼', score
         return '持平', score
     except Exception:
         return '持平', 0.0
@@ -177,7 +181,7 @@ def rebalance(
         shares     += new_shares
         return cash, shares, cost
 
-    elif delta < -portfolio * 0.01:       # 賣出
+    if delta < -portfolio * 0.01:       # 賣出
         sell_shares = min(shares, -delta / price)
         gross       = sell_shares * price
         fee         = gross * (COMM_SELL + TAX_SELL)
@@ -333,20 +337,25 @@ def print_chart(port: np.ndarray, bah: np.ndarray, pos: np.ndarray, dates: list)
     # 倉位條（最下兩行）
     for x in range(min(W, len(p_raw))):
         pv = p_raw[x]
-        if pv >= 75:   grid[H-1][x] = '▓'
-        elif pv >= 50: grid[H-1][x] = '▒'
-        elif pv >= 25: grid[H-1][x] = '░'
-        else:          grid[H-1][x] = '·'
+        if pv >= 75:
+            grid[H-1][x] = '▓'
+        elif pv >= 50:
+            grid[H-1][x] = '▒'
+        elif pv >= 25:
+            grid[H-1][x] = '░'
+        else:
+            grid[H-1][x] = '·'
 
     for x in range(min(W, len(s_raw))):
         rb = row(b_raw[x])
         rs = row(s_raw[x])
-        if 0 <= rb < H-1: grid[rb][x] = '·'
+        if 0 <= rb < H-1:
+            grid[rb][x] = '·'
         if 0 <= rs < H-1:
             grid[rs][x] = '█' if s_raw[x] >= b_raw[x] else '░'
 
-    print(f"\n  策略走勢 vs 買進持有（基準=100）")
-    print(f"  █/░ 策略   · 買進持有   底部色塊=倉位（▓≥75% ▒≥50% ░≥25%）")
+    print("\n  策略走勢 vs 買進持有（基準=100）")
+    print("  █/░ 策略   · 買進持有   底部色塊=倉位（▓≥75% ▒≥50% ░≥25%）")
     print(f"  ┌{'─'*W}┐")
     for ri, r in enumerate(grid):
         if ri == H - 1:
@@ -438,7 +447,6 @@ def print_yearly(days: list[dict], port: np.ndarray):
 # ─── 主程式 ────────────────────────────────────────────────────────────────────
 
 def main():
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('symbol', nargs='?', default='2330')
     parser.add_argument('--start', default=None, help='回測起始日 YYYY-MM-DD')
@@ -455,18 +463,18 @@ def main():
 
     print(f"\n{'='*W}")
     print(f"  {symbol}  Walk-Forward 回測（倉位加碼/減碼策略）  [{period_label}]")
-    print(f"  倉位等級：0% / 25% / 50% / 75% / 100%  起始：依市場趨勢（強多頭→75% 其他→50%）")
+    print("  倉位等級：0% / 25% / 50% / 75% / 100%  起始：依市場趨勢（強多頭→75% 其他→50%）")
     print(f"  交易成本：買 {COMM_BUY*100:.4f}%  賣 {(COMM_SELL+TAX_SELL)*100:.4f}%")
-    print(f"  * 不含三大法人籌碼（歷史籌碼 API 難以批量回溯）")
+    print("  * 不含三大法人籌碼（歷史籌碼 API 難以批量回溯）")
     print(f"{'='*W}")
 
     # ── 1. 取得數據 ──────────────────────────────────────────────────────────
     print(f"\n正在下載 {symbol} 歷史數據...", flush=True)
-    df_full, ticker = fetch_extended(symbol, years=span_years, end_date=sim_end_dt)
+    df_full, _ = fetch_extended(symbol, years=span_years, end_date=sim_end_dt)
     df_full = calc_indicators(df_full)
     all_dates = list(df_full.index)
 
-    print(f"正在下載 ^TWII 市場趨勢數據...", flush=True)
+    print("正在下載 ^TWII 市場趨勢數據...", flush=True)
     twii_regime = fetch_twii_regime(years=span_years, end_date=sim_end_dt)
     N = len(all_dates)
 
@@ -532,18 +540,21 @@ def main():
     print(f"\n{'─'*W}")
     print(f"  信號分佈（共 {sim_n} 天）")
     rec_cnt: dict[str, int] = {}
-    for d in days: rec_cnt[d['rec']] = rec_cnt.get(d['rec'], 0) + 1
+    for d in days:
+        rec_cnt[d['rec']] = rec_cnt.get(d['rec'], 0) + 1
     for lbl in ['強力加碼', '加碼', '持平', '減碼', '強力減碼']:
         cnt = rec_cnt.get(lbl, 0)
         pct = cnt / sim_n * 100
-        bar = '█' * max(1, int(pct / 2))
-        print(f"  {lbl:6s}  {cnt:4d}天 ({pct:5.1f}%) {bar}")
+        bar_str = '█' * max(1, int(pct / 2))
+        print(f"  {lbl:6s}  {cnt:4d}天 ({pct:5.1f}%) {bar_str}")
 
     # 績效摘要
     print(f"\n{'─'*W}")
-    print(f"  績效摘要")
+    print("  績效摘要")
     print(f"{'─'*W}")
-    arrow = lambda v: '🚀' if v > 0.10 else ('📈' if v > 0 else ('📉' if v < -0.10 else '➡️'))
+
+    def arrow(v):
+        return '🚀' if v > 0.10 else ('📈' if v > 0 else ('📉' if v < -0.10 else '➡️'))
     print(f"  策略總報酬:   {_pct(m['strat_ret']):>10}   {arrow(m['strat_ret'])}")
     print(f"  買進持有報酬: {_pct(m['bah_ret']):>10}")
     print(f"  超額報酬:     {_pct(m['alpha']):>10}   {'（策略勝）' if m['alpha'] > 0 else '（持有勝）'}")

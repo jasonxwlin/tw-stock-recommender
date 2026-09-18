@@ -13,13 +13,13 @@ import sys
 import warnings
 warnings.filterwarnings('ignore')
 
+import traceback
 import pandas as pd
 import numpy as np
 import yfinance as yf
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from ta.momentum import RSIIndicator  # kept for fallback
 from ta.trend import MACD, SMAIndicator
 from datetime import date, datetime, timedelta
 
@@ -48,8 +48,10 @@ def _load_company_cache() -> None:
         pass
 
 
-def fetch_company_name(symbol: str, is_otc: bool = False) -> str:
-    """Return the Chinese short name for a stock code, or '' if not found."""
+def fetch_company_name(symbol: str, is_otc: bool = False) -> str:  # pylint: disable=unused-argument
+    """Return the Chinese short name for a stock code, or '' if not found.
+    is_otc is unused here (the company cache isn't market-specific) but kept
+    for call-site symmetry with fetch_institutional(symbol, is_otc=...)."""
     _load_company_cache()
     return _COMPANY_CACHE.get(symbol, '')
 
@@ -110,7 +112,8 @@ def calc_indicators(df: pd.DataFrame) -> pd.DataFrame:
     for v in _rsv:
         _k = _k * (2/3) + v * (1/3)
         _d = _d * (2/3) + _k * (1/3)
-        _ks.append(_k); _ds.append(_d)
+        _ks.append(_k)
+        _ds.append(_d)
     df['K'] = pd.Series(_ks, index=df.index)
     df['D'] = pd.Series(_ds, index=df.index)
 
@@ -243,15 +246,24 @@ MIN_SAMPLES = 4     # minimum occurrences to trust a condition
 COND_GROUPS: dict[str, str] = {}  # populated lazily by _group_of()
 
 def _group_of(name: str) -> str:
-    if name.startswith(('KD', 'K值', 'K低', 'K高')):   return 'KD'
-    if name.startswith('MACD'):                          return 'MACD'
-    if name.startswith('RSI'):                           return 'RSI'
-    if name.startswith('BIAS'):                            return 'BIAS'
-    if '5MA' in name or '5ma' in name.lower():           return 'MA5'
-    if '月線' in name or '20MA' in name:                 return 'MA20'
-    if '季線' in name or '60MA' in name:                 return 'MA60'
-    if '200MA' in name:                                  return 'MA200'
-    if '量' in name:                                     return 'Volume'
+    if name.startswith(('KD', 'K值', 'K低', 'K高')):
+        return 'KD'
+    if name.startswith('MACD'):
+        return 'MACD'
+    if name.startswith('RSI'):
+        return 'RSI'
+    if name.startswith('BIAS'):
+        return 'BIAS'
+    if '5MA' in name or '5ma' in name.lower():
+        return 'MA5'
+    if '月線' in name or '20MA' in name:
+        return 'MA20'
+    if '季線' in name or '60MA' in name:
+        return 'MA60'
+    if '200MA' in name:
+        return 'MA200'
+    if '量' in name:
+        return 'Volume'
     return 'Compound'
 
 
@@ -411,10 +423,12 @@ def _consecutive(lst: list[int]) -> tuple[int, int]:
     buy = sell = 0
     for v in lst:
         if v > 0:
-            if sell: break
+            if sell:
+                break
             buy += 1
         elif v < 0:
-            if buy: break
+            if buy:
+                break
             sell += 1
         else:
             break
@@ -429,7 +443,9 @@ def analyze_institutional(df_inst: pd.DataFrame) -> tuple[int, list[tuple], dict
     trust   = df_inst['trust'].tolist()
     total   = df_inst['total'].tolist()
 
-    cum5 = lambda lst: sum(lst[:5]) // 10_000
+    def cum5(lst):
+        return sum(lst[:5]) // 10_000
+
     f5, t5, tot5 = cum5(foreign), cum5(trust), cum5(total)
     f10 = sum(foreign[:10]) // 10_000 if len(foreign) >= 10 else None
 
@@ -440,27 +456,37 @@ def analyze_institutional(df_inst: pd.DataFrame) -> tuple[int, list[tuple], dict
     signals: list[tuple] = []
 
     if f_buy >= 3:
-        score += 2; signals.append(("外資", f"連續買超 {f_buy} 日，近5日累積 {f5:+,} 萬股"))
+        score += 2
+        signals.append(("外資", f"連續買超 {f_buy} 日，近5日累積 {f5:+,} 萬股"))
     elif f_buy >= 1:
-        score += 1; signals.append(("外資", f"買超 {f_buy} 日，近5日累積 {f5:+,} 萬股"))
+        score += 1
+        signals.append(("外資", f"買超 {f_buy} 日，近5日累積 {f5:+,} 萬股"))
     elif f_sell >= 3:
-        score -= 2; signals.append(("外資", f"連續賣超 {f_sell} 日，近5日累積 {f5:+,} 萬股"))
+        score -= 2
+        signals.append(("外資", f"連續賣超 {f_sell} 日，近5日累積 {f5:+,} 萬股"))
     elif f_sell >= 1:
-        score -= 1; signals.append(("外資", f"賣超 {f_sell} 日，近5日累積 {f5:+,} 萬股"))
+        score -= 1
+        signals.append(("外資", f"賣超 {f_sell} 日，近5日累積 {f5:+,} 萬股"))
 
     if t_buy >= 3:
-        score += 2; signals.append(("投信", f"連續買超 {t_buy} 日，近5日累積 {t5:+,} 萬股"))
+        score += 2
+        signals.append(("投信", f"連續買超 {t_buy} 日，近5日累積 {t5:+,} 萬股"))
     elif t_buy >= 1:
-        score += 1; signals.append(("投信", f"買超 {t_buy} 日，近5日累積 {t5:+,} 萬股"))
+        score += 1
+        signals.append(("投信", f"買超 {t_buy} 日，近5日累積 {t5:+,} 萬股"))
     elif t_sell >= 3:
-        score -= 2; signals.append(("投信", f"連續賣超 {t_sell} 日，近5日累積 {t5:+,} 萬股"))
+        score -= 2
+        signals.append(("投信", f"連續賣超 {t_sell} 日，近5日累積 {t5:+,} 萬股"))
     elif t_sell >= 1:
-        score -= 1; signals.append(("投信", f"賣超 {t_sell} 日，近5日累積 {t5:+,} 萬股"))
+        score -= 1
+        signals.append(("投信", f"賣超 {t_sell} 日，近5日累積 {t5:+,} 萬股"))
 
     if f_buy >= 1 and t_buy >= 1:
-        score += 1; signals.append(("同買", "外資+投信同步買超，籌碼集中"))
+        score += 1
+        signals.append(("同買", "外資+投信同步買超，籌碼集中"))
     elif f_sell >= 1 and t_sell >= 1:
-        score -= 1; signals.append(("同賣", "外資+投信同步賣超，賣壓沉重"))
+        score -= 1
+        signals.append(("同賣", "外資+投信同步賣超，賣壓沉重"))
 
     if f10 is not None:
         tag = "外資10日"
@@ -515,8 +541,8 @@ def fetch_buffett_indicator() -> dict:
     Taiwan Buffett Indicator = 台灣上市市值 / 台灣GDP
     GDP: DGBAS 2023 (NT$ billion); market cap fetched live from TWSE or estimated via ^TWII.
     """
-    TAIWAN_GDP_BN = 23_599  # NT$ billion (2023, DGBAS 行政院主計總處)
-    GDP_YEAR      = 2023
+    taiwan_gdp_bn = 23_599  # NT$ billion (2023, DGBAS 行政院主計總處)
+    gdp_year      = 2023
 
     market_cap_bn = None
     note = ""
@@ -565,7 +591,7 @@ def fetch_buffett_indicator() -> dict:
     if market_cap_bn is None:
         return {}
 
-    ratio = market_cap_bn / TAIWAN_GDP_BN * 100
+    ratio = market_cap_bn / taiwan_gdp_bn * 100
 
     if ratio < 80:
         level, desc = "嚴重低估", "台股估值極低，長線布局機會"
@@ -581,8 +607,8 @@ def fetch_buffett_indicator() -> dict:
     return {
         'ratio':         ratio,
         'market_cap_bn': market_cap_bn,
-        'gdp_bn':        TAIWAN_GDP_BN,
-        'gdp_year':      GDP_YEAR,
+        'gdp_bn':        taiwan_gdp_bn,
+        'gdp_year':      gdp_year,
         'level':         level,
         'desc':          desc,
         'note':          note,
@@ -963,13 +989,13 @@ def analyze(
 
     # ── Build conditions & run backtest ─────────────────────────────────────
     # Per-regime thresholds: bull → hard to reduce; bear → easy to reduce
-    _REGIME_PARAMS: dict[str, dict] = {
-        '強多頭': dict(add=0.25, reduce=-0.40, strong=-0.80, move=0.020),
-        '多頭':   dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015),
-        '中性':   dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015),
-        '空頭':   dict(add=0.25, reduce=-0.25, strong=-0.60, move=0.015),
+    _regime_params: dict[str, dict] = {
+        '強多頭': {"add": 0.25, "reduce": -0.40, "strong": -0.80, "move": 0.020},
+        '多頭':   {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015},
+        '中性':   {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015},
+        '空頭':   {"add": 0.25, "reduce": -0.25, "strong": -0.60, "move": 0.015},
     }
-    _rp = _REGIME_PARAMS.get((regime or {}).get('regime', '中性'), _REGIME_PARAMS['中性'])
+    _rp = _regime_params.get((regime or {}).get('regime', '中性'), _regime_params['中性'])
 
     conditions = build_conditions(df)
     outcomes   = compute_outcomes(df, move_thresh=_rp['move'])
@@ -1081,10 +1107,14 @@ def _direction_label(excess: float, n: int) -> str:
     """Label a condition based on its excess edge vs baseline."""
     # Require minimum statistical confidence: penalise small samples
     effective = excess * min(n / 10.0, 1.0)
-    if effective >= +0.20:  return "強多 ↑↑"
-    if effective >= +0.10:  return "多  ↑ "
-    if effective <= -0.20:  return "強空 ↓↓"
-    if effective <= -0.10:  return "空  ↓ "
+    if effective >= +0.20:
+        return "強多 ↑↑"
+    if effective >= +0.10:
+        return "多  ↑ "
+    if effective <= -0.20:
+        return "強空 ↓↓"
+    if effective <= -0.10:
+        return "空  ↓ "
     return "中性 → "
 
 
@@ -1328,7 +1358,6 @@ def main():
             print(fmt_report(result))
             results.append(result)
         except Exception as e:
-            import traceback
             print(f"[錯誤] {sym}: {e}")
             traceback.print_exc()
 

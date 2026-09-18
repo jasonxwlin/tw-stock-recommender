@@ -1,0 +1,56 @@
+[MESSAGES CONTROL]
+# Every disable below reflects a deliberate, documented choice for this
+# codebase (see CLAUDE.md) rather than a lint exemption for laziness —
+# each one is explained so a future change can reconsider it deliberately.
+disable=
+    # This project's core architecture is "fetch_* fails silently and
+    # independently" (see CLAUDE.md) — a missing FRED_API_KEY, a TWSE
+    # redesign, or a rate limit should degrade one section, not crash the
+    # whole report. That means catching Exception broadly and on purpose,
+    # not by accident.
+    broad-exception-caught,
+    # Project convention (see CLAUDE.md/ponytail guidance): no docstrings
+    # unless they explain a non-obvious WHY. Identifier names already say
+    # what a function does.
+    missing-function-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
+    # Complexity-metric warnings (arg/local/branch/statement/return counts,
+    # module line count) on already-tested, cohesive functions — the
+    # scoring engine (analyze/build_conditions/calc_indicators), report
+    # formatters (fmt_report), and simulation loops (backtest_annual.py).
+    # Splitting these to satisfy arbitrary thresholds would risk real bugs
+    # in financial calculation logic for no functional benefit.
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-return-statements,
+    too-many-arguments,
+    too-many-positional-arguments,
+    too-many-nested-blocks,
+    too-many-lines,
+    # Small (~8-line) CLI error-handling boilerplate shared between
+    # fundamentals.py/news.py's main(). Not worth a shared helper for two
+    # tiny scripts.
+    duplicate-code,
+    # `import warnings; warnings.filterwarnings('ignore')` deliberately
+    # runs before the third-party imports (pandas/requests/yfinance) so it
+    # suppresses their own import-time warnings (e.g. urllib3's
+    # NotOpenSSLWarning). That necessarily breaks import-block contiguity,
+    # which is what these two checks flag — moving filterwarnings after
+    # the imports would let that warning spam leak back onto every run.
+    wrong-import-position,
+    wrong-import-order
+
+[FORMAT]
+# Chinese-heavy f-strings/dict literals routinely exceed pylint's default
+# 100-char limit without being hard to read; 120 comfortably covers this
+# codebase's longest legitimate lines instead of force-wrapping them.
+max-line-length=120
+
+[BASIC]
+# W/H/N are an established convention throughout this codebase for
+# short-lived local constants: report width (W = 70), ASCII-chart
+# width/height (W, H), and day-count (N). Consistent across all four
+# modules; renaming would touch many call sites for no readability gain.
+good-names=i,j,k,ex,Run,_,W,H,N

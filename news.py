@@ -8,6 +8,7 @@ skill) can read and judge for themselves. Does not feed into tech_analysis.py.
 from __future__ import annotations
 import re
 import sys
+import traceback
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -151,7 +152,6 @@ def main():
             result = fetch_news(company_name, sym, ticker)
             print(fmt_report(sym, company_name, result))
         except Exception as e:
-            import traceback
             print(f"[錯誤] {sym}: {e}")
             traceback.print_exc()
 

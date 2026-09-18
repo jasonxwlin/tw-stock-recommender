@@ -9,12 +9,13 @@ from __future__ import annotations
 import json
 import re
 import sys
+import traceback
 import warnings
 warnings.filterwarnings('ignore')
 
 import requests
 import yfinance as yf
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 from tech_analysis import fetch_price_data, fetch_company_name
@@ -295,7 +296,6 @@ def main():
             result = analyze_fundamentals(sym, is_otc, ticker)
             print(fmt_report(sym, company_name, result))
         except Exception as e:
-            import traceback
             print(f"[錯誤] {sym}: {e}")
             traceback.print_exc()
 
