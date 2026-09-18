@@ -18,17 +18,22 @@ Walk-Forward 3-Year Backtest with Position Sizing
 
 from __future__ import annotations
 import argparse
-import sys
 import warnings
-warnings.filterwarnings('ignore')
-
-import pandas as pd
-import numpy as np
-import yfinance as yf
 from datetime import datetime, timedelta
 
-sys.path.insert(0, '.')
-from tech_analysis import (
+import numpy as np
+import pandas as pd
+
+# yfinance (and tech_analysis, which imports requests too) transitively
+# triggers urllib3's NotOpenSSLWarning at import time; filterwarnings must
+# run before importing either to suppress it, which unavoidably breaks
+# import-block contiguity for these lines only. tech_analysis.py lives in
+# the same directory as this script, which Python already puts on sys.path
+# when running `python3 backtest_annual.py` directly — no manual path hack
+# needed.
+warnings.filterwarnings('ignore')
+import yfinance as yf  # pylint: disable=wrong-import-position
+from tech_analysis import (  # pylint: disable=wrong-import-position
     calc_indicators,
     build_conditions,
     compute_outcomes,

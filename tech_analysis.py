@@ -10,18 +10,22 @@ import json
 import os
 import re
 import sys
-import warnings
-warnings.filterwarnings('ignore')
-
 import traceback
-import pandas as pd
-import numpy as np
-import yfinance as yf
-import requests
+import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from ta.trend import MACD, SMAIndicator
 from datetime import date, datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from ta.trend import MACD, SMAIndicator
+
+# requests/yfinance transitively trigger urllib3's NotOpenSSLWarning at
+# import time; filterwarnings must run before importing them to suppress it,
+# which unavoidably breaks import-block contiguity for these two lines only.
+warnings.filterwarnings('ignore')
+import requests  # pylint: disable=wrong-import-position
+import yfinance as yf  # pylint: disable=wrong-import-position
 
 
 # ─────────────────────────────────────────────────────────────────────────────

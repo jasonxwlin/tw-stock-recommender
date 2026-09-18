@@ -10,14 +10,18 @@ import re
 import sys
 import traceback
 import warnings
-warnings.filterwarnings('ignore')
-
-import requests
-import yfinance as yf
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
-from tech_analysis import fetch_price_data, fetch_company_name
+# requests/yfinance (and tech_analysis, which imports them too) transitively
+# trigger urllib3's NotOpenSSLWarning at import time; filterwarnings must run
+# before importing any of them to suppress it, which unavoidably breaks
+# import-block contiguity for these lines only.
+warnings.filterwarnings('ignore')
+import requests  # pylint: disable=wrong-import-position
+import yfinance as yf  # pylint: disable=wrong-import-position
+
+from tech_analysis import fetch_price_data, fetch_company_name  # pylint: disable=wrong-import-position
 
 _UA = {"User-Agent": "Mozilla/5.0"}
 

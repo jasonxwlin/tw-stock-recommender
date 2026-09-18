@@ -32,15 +32,7 @@ disable=
     # Small (~8-line) CLI error-handling boilerplate shared between
     # fundamentals.py/news.py's main(). Not worth a shared helper for two
     # tiny scripts.
-    duplicate-code,
-    # `import warnings; warnings.filterwarnings('ignore')` deliberately
-    # runs before the third-party imports (pandas/requests/yfinance) so it
-    # suppresses their own import-time warnings (e.g. urllib3's
-    # NotOpenSSLWarning). That necessarily breaks import-block contiguity,
-    # which is what these two checks flag — moving filterwarnings after
-    # the imports would let that warning spam leak back onto every run.
-    wrong-import-position,
-    wrong-import-order
+    duplicate-code
 
 [FORMAT]
 # Chinese-heavy f-strings/dict literals routinely exceed pylint's default
