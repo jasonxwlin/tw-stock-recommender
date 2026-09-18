@@ -1,6 +1,7 @@
 # 台灣股票技術分析推薦系統
 
-[![Tests](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/test.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/test.yml)
+[![Tests](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/coverage.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/coverage.yml)
+[![PR Checks](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/jasonxwlin/tw-stock-recommender.svg)](https://codecov.io/github/jasonxwlin/tw-stock-recommender)
 
 以**歷史回測驅動**的台灣股票分析工具，整合為 Claude Code Skill。

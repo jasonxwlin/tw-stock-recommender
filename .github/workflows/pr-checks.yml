@@ -1,0 +1,30 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: pylint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      # Baseline score on this codebase is ~8.7/10 (mostly pre-existing
+      # style nits, not bugs). Gate on regression below that, not on 10/10.
+      - run: pylint --fail-under=8.0 tech_analysis.py fundamentals.py news.py backtest_annual.py
+
+  test:
+    name: pytest + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest  # pytest.ini already runs coverage and fails under 90%
