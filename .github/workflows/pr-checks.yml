@@ -14,9 +14,9 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      # Baseline score on this codebase is ~8.7/10 (mostly pre-existing
-      # style nits, not bugs). Gate on regression below that, not on 10/10.
-      - run: pylint --fail-under=8.0 tech_analysis.py fundamentals.py news.py backtest_annual.py
+      # Zero-tolerance: codebase is clean (10.00/10) as of the .pylintrc
+      # added alongside this — any new message fails the check.
+      - run: pylint tech_analysis.py fetchers.py conditions.py backtest_engine.py market_indicators.py report.py fundamentals.py news.py backtest_annual.py
 
   test:
     name: pytest + coverage

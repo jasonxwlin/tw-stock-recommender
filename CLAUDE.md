@@ -44,6 +44,17 @@ The project is a Taiwan stock technical analysis tool exposed as Claude Code Ski
 
 ### `tech_analysis.py` — core engine
 
+`tech_analysis.py` is the orchestrator and entry point (`main()`); the pipeline
+stages below are split across sibling modules to stay under pylint's
+`too-many-lines`, and `tech_analysis.py` re-imports every public/test-facing
+name from them (via `__all__`) so `from tech_analysis import X` / `tech_analysis.X`
+keeps working unchanged: `fetchers.py` (price/company/earnings data + indicator
+calculation), `conditions.py` (`build_conditions()`), `backtest_engine.py`
+(`compute_outcomes()`/`backtest_conditions()`/`baseline_stats()`), `market_indicators.py`
+(`fetch_vix()`/`fetch_buffett_indicator()`), `report.py` (`fmt_report()`/`fmt_summary_table()`).
+Institutional-investor fetching/scoring, futures positioning, macro events,
+`analyze()`, and `main()` stay in `tech_analysis.py` itself.
+
 Data flows in this order:
 
 1. **Fetch** — `fetch_price_data()` pulls 400 days of OHLCV from Yahoo Finance (tries `.TW` then `.TWO`). `fetch_institutional()` fetches institutional investor (三大法人) data from TWSE/TPEx APIs in parallel via `ThreadPoolExecutor`. `fetch_market_regime()` pulls `^TWII` vs its MA200 to classify the market as 強多頭 / 多頭 / 中性 / 空頭.

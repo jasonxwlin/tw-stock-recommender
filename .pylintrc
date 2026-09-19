@@ -1,0 +1,33 @@
+[MESSAGES CONTROL]
+# Every disable below reflects a deliberate, documented choice for this
+# codebase (see CLAUDE.md) rather than a lint exemption for laziness —
+# each one is explained so a future change can reconsider it deliberately.
+disable=
+    # This project's core architecture is "fetch_* fails silently and
+    # independently" (see CLAUDE.md) — a missing FRED_API_KEY, a TWSE
+    # redesign, or a rate limit should degrade one section, not crash the
+    # whole report. That means catching Exception broadly and on purpose,
+    # not by accident.
+    broad-exception-caught
+
+[SIMILARITIES]
+# fundamentals.py/news.py's main() loops now share a print_cli_error() helper
+# for the error path (see tech_analysis.py), so the only remaining overlap is
+# the universal `if __name__ == "__main__": main()` idiom plus 2 near-
+# identical lines — not real duplication, just every Python script ending
+# the same way. Raised from the default (4) just enough to clear that, while
+# still catching a genuinely copy-pasted function body elsewhere.
+min-similarity-lines=8
+
+[FORMAT]
+# Chinese-heavy f-strings/dict literals routinely exceed pylint's default
+# 100-char limit without being hard to read; 120 comfortably covers this
+# codebase's longest legitimate lines instead of force-wrapping them.
+max-line-length=120
+
+[BASIC]
+# W/H/N are an established convention throughout this codebase for
+# short-lived local constants: report width (W = 70), ASCII-chart
+# width/height (W, H), and day-count (N). Consistent across all four
+# modules; renaming would touch many call sites for no readability gain.
+good-names=i,j,k,ex,Run,_,W,H,N

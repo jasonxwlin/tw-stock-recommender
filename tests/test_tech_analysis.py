@@ -126,7 +126,8 @@ def _analyze_with_fixed_tech_score(tech_score: float, regime: dict | None = None
                   'weight': tech_score, 'group': 'Compound'},
         }
         ta.analyze_institutional  = lambda df_inst: (0, [], {})
-        result = ta.analyze(df, 'TEST', df_inst=pd.DataFrame(), regime=regime)
+        macro  = {'regime': regime} if regime is not None else None
+        result = ta.analyze(df, 'TEST', df_inst=pd.DataFrame(), macro=macro)
     finally:
         (ta.build_conditions, ta.compute_outcomes, ta.baseline_stats,
          ta.backtest_conditions, ta.analyze_institutional) = orig

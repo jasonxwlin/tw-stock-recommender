@@ -10,14 +10,18 @@ import json
 import re
 import sys
 import warnings
-warnings.filterwarnings('ignore')
-
-import requests
-import yfinance as yf
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
-from tech_analysis import fetch_price_data, fetch_company_name
+# requests/yfinance (and tech_analysis, which imports them too) transitively
+# trigger urllib3's NotOpenSSLWarning at import time; filterwarnings must run
+# before importing any of them to suppress it, which unavoidably breaks
+# import-block contiguity for these lines only.
+warnings.filterwarnings('ignore')
+import requests  # pylint: disable=wrong-import-position
+import yfinance as yf  # pylint: disable=wrong-import-position
+
+from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error  # pylint: disable=wrong-import-position
 
 _VALUATION_CACHE_FILE = Path(__file__).parent / "valuation_cache.json"
 _TWSE_HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.twse.com.tw/'}
@@ -231,6 +235,7 @@ def fetch_quality_trend(ticker: str, quarters: int = 4) -> list[dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def analyze_fundamentals(symbol: str, is_otc: bool, ticker: str) -> dict:
+    """Combine valuation/revenue/quality snapshots — reference only, no score."""
     return {
         'valuation': fetch_valuation_snapshot(symbol, is_otc),
         'revenue':   fetch_monthly_revenue(symbol, is_otc),
@@ -239,6 +244,7 @@ def analyze_fundamentals(symbol: str, is_otc: bool, ticker: str) -> dict:
 
 
 def fmt_report(symbol: str, company_name: str, r: dict) -> str:
+    """Render analyze_fundamentals()'s result dict into the text snapshot report."""
     W = 70
     lines: list[str] = []
     lines.append("=" * W)
@@ -280,6 +286,7 @@ def fmt_report(symbol: str, company_name: str, r: dict) -> str:
 
 
 def main():
+    """CLI entry point: print a fundamentals snapshot for each symbol in sys.argv."""
     if len(sys.argv) < 2:
         print("用法: python3 fundamentals.py <代號1> [代號2] ...")
         print("範例: python3 fundamentals.py 2330 2317")
@@ -295,9 +302,7 @@ def main():
             result = analyze_fundamentals(sym, is_otc, ticker)
             print(fmt_report(sym, company_name, result))
         except Exception as e:
-            import traceback
-            print(f"[錯誤] {sym}: {e}")
-            traceback.print_exc()
+            print_cli_error(sym, e)
 
 
 if __name__ == "__main__":
