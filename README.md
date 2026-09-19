@@ -4,7 +4,7 @@
 [![PR Checks](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/jasonxwlin/tw-stock-recommender.svg)](https://codecov.io/github/jasonxwlin/tw-stock-recommender)
 
-以**歷史回測驅動**的台灣股票分析工具，整合為 Claude Code Skill。
+以**歷史回測驅動**的台灣股票分析工具，可直接以 Python 執行，也可選擇整合為 Claude Code Skill。
 輸入一個或多個台灣股票代號，自動分析技術指標 + 三大法人籌碼 + 市場多空趨勢，輸出未來一週的倉位建議：**加碼 / 持平 / 減碼**。
 
 > **核心特色**：不使用固定的 if/else 規則，而是針對每支股票的過去 6 個月歷史數據，計算每個技術條件的實際預測準確率，再決定信號強度。同一個條件（如 RSI 超買）在不同股票上可能是截然相反的信號。並自動判斷台股大盤多空趨勢，在強多頭市場調高持倉偏向、提高減倉門檻，避免逆勢減碼。
@@ -16,7 +16,7 @@
 ### 前置需求
 
 - [uv](https://docs.astral.sh/uv/)（Python 套件與虛擬環境管理工具；會自動處理 Python 3.9+ 版本）
-- [Claude Code](https://claude.ai/code) CLI（用於 Skill）
+- [Claude Code](https://claude.ai/code) CLI（**非必要**，僅在使用 Skill 模式時才需要；直接執行 Python script 不需要安裝）
 
 ### 步驟
 
@@ -28,39 +28,47 @@ cd stock-recommender
 # 2. 建立虛擬環境並安裝套件
 uv venv
 uv pip install -r requirements.txt
+```
 
-# 3. 用 Claude Code 開啟此目錄
+到這裡就可以直接執行 `uv run python3 tech_analysis.py <代號>` 了（見下方「方式一」）。
+
+```bash
+# 3.（非必要）用 Claude Code 開啟此目錄，啟用 /stock-analysis 等 Skill
 claude .
 ```
 
-安裝完成。`.claude/commands/stock-analysis.md` 會被 Claude Code 自動載入為 `/stock-analysis` Skill。
+若執行了步驟 3，`.claude/commands/stock-analysis.md` 會被 Claude Code 自動載入為 `/stock-analysis` Skill。
 
 ---
 
 ## 使用方式
 
-### 方式一：Claude Code Skill（推薦）
+### 方式一：直接執行 Python Script
 
-在 Claude Code 中輸入：
+不需要 Claude Code，安裝完套件後即可直接執行：
+
+```bash
+uv run python3 tech_analysis.py 2330
+uv run python3 tech_analysis.py 2330 2317 0050
+```
+
+會直接輸出完整的中文報告，包含：
+- 技術指標快照（KD / RSI / MACD / 均線 / 乖離率）
+- 總體市場指標（VIX 恐慌指數 / 巴菲特指標 / **台股多空趨勢** / **外資期貨淨部位與空單**）
+- 三大法人近 5 日買賣超與連買連賣天數
+- **歷史回測表格**（每個條件的實際預測準確率）
+- 倉位建議（加碼 / 持平 / 減碼）
+
+### 方式二：Claude Code Skill（非必要，額外提供分析師評語）
+
+若有安裝 Claude Code，在其中輸入：
 
 ```
 /stock-analysis 2330
 /stock-analysis 2330 2317 0050
 ```
 
-Claude 會執行分析並以中文提供：
-- 技術指標快照（KD / RSI / MACD / 均線 / 乖離率）
-- 總體市場指標（VIX 恐慌指數 / 巴菲特指標 / **台股多空趨勢** / **外資期貨淨部位與空單**）
-- 三大法人近 5 日買賣超與連買連賣天數
-- **歷史回測表格**（每個條件的實際預測準確率）
-- 分析師評語與倉位建議
-
-### 方式二：直接執行 Python Script
-
-```bash
-uv run python3 tech_analysis.py 2330
-uv run python3 tech_analysis.py 2330 2317 0050
-```
+Claude 會執行同一份分析，呈現上述完整報告，並額外附上 3–4 句中文分析師評語（解讀最關鍵的信號、籌碼面是否與技術面同向、整體風險評估）。
 
 ---
 
