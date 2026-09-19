@@ -40,14 +40,9 @@ jobs:
       - run: pip install -r requirements.txt
       - uses: snyk/actions/setup@master
       # Open Source: known CVEs in requirements.txt's dependencies.
+      # (Snyk Code/SAST dropped — not enabled on this org's plan; see
+      # SNYK-CODE-0005 in Snyk's docs if that changes and this gets revisited.)
       - name: Snyk Open Source
         run: snyk test --severity-threshold=high --file=requirements.txt --package-manager=pip
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      # Code (SAST): vulnerable patterns in this repo's own source (injection,
-      # unsafe deserialization, etc.) — complements pylint, which checks style
-      # and complexity, not security.
-      - name: Snyk Code
-        run: snyk code test --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
