@@ -204,7 +204,8 @@ def test_analyze_full_integration_returns_expected_shape():
                'market_cap_bn': 50_000.0, 'gdp_bn': 23_599.0, 'gdp_year': 2023, 'note': ''}
     futures = {'bonus': 0.0, 'short_bonus': 0.0}
 
-    result = ta.analyze(df, '2330', df_inst, vix=vix, buffett=buffett, regime=regime, futures=futures)
+    macro  = {'vix': vix, 'buffett': buffett, 'regime': regime, 'futures': futures}
+    result = ta.analyze(df, '2330', df_inst, macro=macro)
 
     assert result['symbol'] == '2330'
     assert result['recommendation'] in ta._REC_RANK
@@ -241,7 +242,8 @@ def _full_result(earnings_date=None):
                'market_cap_bn': 55_000.0, 'gdp_bn': 23_599.0, 'gdp_year': 2023, 'note': '估算'}
     futures = {'bonus': 0.1, 'short_bonus': -0.05, 'net_pos': -1000.0, 'short_oi': 2000.0,
                'note': '樣本20天', 'short_note': '樣本20天'}
-    result  = ta.analyze(df, '2330', df_inst, vix=vix, buffett=buffett, regime=regime, futures=futures)
+    macro   = {'vix': vix, 'buffett': buffett, 'regime': regime, 'futures': futures}
+    result  = ta.analyze(df, '2330', df_inst, macro=macro)
     result['company_name']  = '台積電'
     result['earnings_date'] = earnings_date
     return result

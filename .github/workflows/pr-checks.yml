@@ -16,7 +16,7 @@ jobs:
       - run: pip install -r requirements.txt
       # Zero-tolerance: codebase is clean (10.00/10) as of the .pylintrc
       # added alongside this — any new message fails the check.
-      - run: pylint tech_analysis.py fundamentals.py news.py backtest_annual.py
+      - run: pylint tech_analysis.py fetchers.py conditions.py backtest_engine.py market_indicators.py report.py fundamentals.py news.py backtest_annual.py
 
   test:
     name: pytest + coverage

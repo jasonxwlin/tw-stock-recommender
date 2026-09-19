@@ -8,7 +8,6 @@ skill) can read and judge for themselves. Does not feed into tech_analysis.py.
 from __future__ import annotations
 import re
 import sys
-import traceback
 import warnings
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -21,7 +20,7 @@ warnings.filterwarnings('ignore')
 import requests  # pylint: disable=wrong-import-position
 import yfinance as yf  # pylint: disable=wrong-import-position
 
-from tech_analysis import fetch_price_data, fetch_company_name  # pylint: disable=wrong-import-position
+from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error  # pylint: disable=wrong-import-position
 
 _UA = {"User-Agent": "Mozilla/5.0"}
 
@@ -102,6 +101,7 @@ def fetch_yahoo_news(ticker: str, days: int = 7, limit: int = 10) -> list[dict]:
 
 
 def fetch_news(company_name: str, symbol: str, ticker: str, days: int = 7) -> dict:
+    """Recent Chinese (Google News) + English (yfinance) headlines — reference only, no score."""
     query = company_name or symbol
     return {
         'zh': fetch_google_news(query, days=days),
@@ -110,6 +110,7 @@ def fetch_news(company_name: str, symbol: str, ticker: str, days: int = 7) -> di
 
 
 def fmt_report(symbol: str, company_name: str, r: dict) -> str:
+    """Render fetch_news()'s result dict into the raw headline-list text report."""
     W = 70
     lines: list[str] = []
     lines.append("=" * W)
@@ -141,6 +142,7 @@ def fmt_report(symbol: str, company_name: str, r: dict) -> str:
 
 
 def main():
+    """CLI entry point: print a news snapshot for each symbol in sys.argv."""
     if len(sys.argv) < 2:
         print("用法: python3 news.py <代號1> [代號2] ...")
         print("範例: python3 news.py 2330 2317")
@@ -156,8 +158,7 @@ def main():
             result = fetch_news(company_name, sym, ticker)
             print(fmt_report(sym, company_name, result))
         except Exception as e:
-            print(f"[錯誤] {sym}: {e}")
-            traceback.print_exc()
+            print_cli_error(sym, e)
 
 
 if __name__ == "__main__":
