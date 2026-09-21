@@ -29,3 +29,21 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  snyk-monitor:
+    name: Snyk monitor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - uses: snyk/actions/setup@master
+      # snyk test/code test (in pr-checks.yml) only check a PR at that moment;
+      # `monitor` publishes a snapshot of main to Snyk's dashboard so it can
+      # alert on newly-disclosed CVEs later and keep the README badge live.
+      - name: Snyk monitor
+        run: snyk monitor --file=requirements.txt --package-manager=pip
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
