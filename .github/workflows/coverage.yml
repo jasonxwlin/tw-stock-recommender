@@ -47,3 +47,44 @@ jobs:
         run: snyk monitor --file=requirements.txt --package-manager=pip
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  pylint-badge:
+    name: Update pylint score badge
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+
+      # --exit-zero: this job only reports the score, pr-checks.yml's lint
+      # job is what actually enforces zero-tolerance and fails PRs.
+      - name: Run pylint and capture score
+        id: pylint
+        run: |
+          SCORE=$(pylint --exit-zero \
+            tech_analysis.py fetchers.py conditions.py backtest_engine.py \
+            market_indicators.py report.py fundamentals.py news.py backtest_annual.py \
+            | grep -oP 'rated at \K[0-9.]+(?=/10)')
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+
+      # shields.io endpoint-badge JSON, read directly from this file on
+      # raw.githubusercontent.com — no gist/external token needed.
+      - name: Generate badge JSON
+        run: |
+          SCORE="${{ steps.pylint.outputs.score }}"
+          COLOR=$(python3 -c "s=float('$SCORE'); print('brightgreen' if s>=9.5 else 'yellow' if s>=8 else 'red')")
+          mkdir -p badges
+          printf '{"schemaVersion": 1, "label": "pylint", "message": "%s/10", "color": "%s"}\n' \
+            "$SCORE" "$COLOR" > badges/pylint.json
+
+      - name: Commit badge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add badges/pylint.json
+          git diff --cached --quiet || git commit -m "chore: update pylint score badge [skip ci]"
+          git push
