@@ -1,6 +1,11 @@
 yfinance>=0.2.0
 ta>=0.10.0
 requests>=2.28.0
+# Pinned directly (not just left to requests' transitive resolution) to force
+# a floor above the high-severity urllib3 CVEs Snyk flagged: resource-
+# exhaustion via chained/streamed decompression and Authorization-header
+# leakage on cross-origin redirects.
+urllib3>=2.7.0
 pandas>=1.5.0
 numpy>=1.23.0
 pytest>=8.0.0
