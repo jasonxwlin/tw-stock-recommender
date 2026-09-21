@@ -14,7 +14,7 @@
 
 ### 前置需求
 
-- [uv](https://docs.astral.sh/uv/)（Python 套件與虛擬環境管理工具；會自動處理 Python 3.9+ 版本）
+- [uv](https://docs.astral.sh/uv/)（Python 套件與虛擬環境管理工具；會自動處理 Python 3.10+ 版本）
 - [Claude Code](https://claude.ai/code) CLI（**非必要**，僅在使用 Skill 模式時才需要；直接執行 Python script 不需要安裝）
 
 ### 步驟

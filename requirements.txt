@@ -1,6 +1,18 @@
 yfinance>=0.2.0
 ta>=0.10.0
-requests>=2.28.0
+# 2.33.0 floor clears 3 medium-severity requests CVEs Snyk flagged: .netrc
+# credentials sent to attacker-controlled hosts, certificate verification
+# bypass on subsequent requests, and an insecure temp file.
+requests>=2.33.0
+# Pinned directly (not just left to requests' transitive resolution) to force
+# a floor above the high-severity urllib3 CVEs Snyk flagged: resource-
+# exhaustion via chained/streamed decompression and Authorization-header
+# leakage on cross-origin redirects. Also clears 2 medium-severity urllib3
+# CVEs (Proxy-Authorization header leak on redirect, open redirect via
+# ignored retries) at a lower floor than this.
+urllib3>=2.7.0
+# Clears a medium-severity ReDoS Snyk flagged in idna (pulled in via requests).
+idna>=3.15
 pandas>=1.5.0
 numpy>=1.23.0
 pytest>=8.0.0
