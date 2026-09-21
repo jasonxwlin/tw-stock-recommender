@@ -1,9 +1,7 @@
 # 台灣股票技術分析推薦系統
 
-[![Tests](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/coverage.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/coverage.yml)
-[![PR Checks](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/pr-checks.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/jasonxwlin/tw-stock-recommender.svg)](https://codecov.io/github/jasonxwlin/tw-stock-recommender)
-[![Known Vulnerabilities](https://snyk.io/test/github/jasonxwlin/tw-stock-recommender/badge.svg)](https://snyk.io/test/github/jasonxwlin/tw-stock-recommender)
+[![Coverage](https://img.shields.io/codecov/c/github/jasonxwlin/tw-stock-recommender/main.svg)](https://codecov.io/github/jasonxwlin/tw-stock-recommender/branch/main)
+[![Known Vulnerabilities](https://snyk.io/test/github/jasonxwlin/tw-stock-recommender/main/badge.svg?targetFile=requirements.txt)](https://snyk.io/test/github/jasonxwlin/tw-stock-recommender/main?targetFile=requirements.txt)
 
 以**歷史回測驅動**的台灣股票分析工具，可直接以 Python 執行，也可選擇整合為 Claude Code Skill。
 輸入一個或多個台灣股票代號，自動分析技術指標 + 三大法人籌碼 + 市場多空趨勢，輸出未來一週的倉位建議：**加碼 / 持平 / 減碼**。
