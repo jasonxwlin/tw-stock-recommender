@@ -28,3 +28,26 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pytest  # pytest.ini already runs coverage and fails under 90%
+
+  snyk:
+    name: snyk security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - uses: snyk/actions/setup@master
+      # Open Source: known CVEs in requirements.txt's dependencies.
+      - name: Snyk Open Source
+        run: snyk test --severity-threshold=high --file=requirements.txt --package-manager=pip
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # Code (SAST): vulnerable patterns in this repo's own source (injection,
+      # unsafe deserialization, etc.) — complements pylint, which checks style
+      # and complexity, not security.
+      - name: Snyk Code
+        run: snyk code test --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
