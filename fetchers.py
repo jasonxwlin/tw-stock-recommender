@@ -23,22 +23,48 @@ _TWSE_HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.twse.com.tw/'}
 
 _COMPANY_CACHE: dict[str, str] = {}  # symbol → 公司簡稱
 
+_COMPANY_SOURCES = (
+    # (url, code field, short-name field) — 上市 (TWSE) then 上櫃 (TPEx)
+    ('https://openapi.twse.com.tw/v1/opendata/t187ap03_L', '公司代號', '公司簡稱'),
+    ('https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O', 'SecuritiesCompanyCode', 'CompanyAbbreviation'),
+)
+
+
 def _load_company_cache() -> None:
-    """Populate _COMPANY_CACHE from TWSE OpenAPI (all listed companies, one call)."""
+    """Populate _COMPANY_CACHE from TWSE + TPEx OpenAPI (all listed/OTC companies,
+    one call each). Each source fails independently."""
     if _COMPANY_CACHE:
         return
-    try:
-        r = requests.get(
-            'https://openapi.twse.com.tw/v1/opendata/t187ap03_L',
-            headers=_TWSE_HDR, timeout=10,
-        )
-        for row in r.json():
-            code  = str(row.get('公司代號', '')).strip()
-            short = str(row.get('公司簡稱', '')).strip()
-            if code and short:
-                _COMPANY_CACHE[code] = short
-    except Exception:
-        pass
+    for url, code_key, name_key in _COMPANY_SOURCES:
+        try:
+            r = requests.get(url, headers=_TWSE_HDR, timeout=10)
+            for row in r.json():
+                code  = str(row.get(code_key, '')).strip()
+                short = str(row.get(name_key, '')).strip()
+                if code and short:
+                    _COMPANY_CACHE[code] = short
+        except Exception:
+            pass
+
+
+def resolve_symbol(arg: str) -> str:
+    """Map a CLI argument to a stock code. Codes (ASCII, e.g. 2330/0050) pass
+    through unchanged; a company name matches an exact short name first, then a
+    unique substring (日月光→3711 日月光投控). Raises ValueError if unknown/ambiguous."""
+    arg = arg.strip().upper()
+    if arg.isascii():
+        return arg
+    _load_company_cache()
+    exact = [c for c, n in _COMPANY_CACHE.items() if n == arg]
+    if exact:
+        return exact[0]
+    hits = [c for c, n in _COMPANY_CACHE.items() if arg in n]
+    if len(hits) == 1:
+        return hits[0]
+    if hits:
+        opts = '、'.join(f'{c} {_COMPANY_CACHE[c]}' for c in hits[:10])
+        raise ValueError(f'「{arg}」對應多檔股票，請改用代號：{opts}')
+    raise ValueError(f'找不到公司名稱「{arg}」，請改用股票代號')
 
 
 def fetch_company_name(symbol: str, is_otc: bool = False) -> str:  # pylint: disable=unused-argument

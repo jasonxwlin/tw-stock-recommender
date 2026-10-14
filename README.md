@@ -5,7 +5,7 @@
 [![Pylint](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jasonxwlin/tw-stock-recommender/main/badges/pylint.json)](https://github.com/jasonxwlin/tw-stock-recommender/actions/workflows/coverage.yml)
 
 以**歷史回測驅動**的台灣股票分析工具，可直接以 Python 執行，也可選擇整合為 Claude Code Skill。
-輸入一個或多個台灣股票代號，自動分析技術指標 + 三大法人籌碼 + 市場多空趨勢，輸出未來一週的倉位建議：**加碼 / 持平 / 減碼**。
+輸入一個或多個台灣股票代號或公司名稱（如「台積電」），自動分析技術指標 + 三大法人籌碼 + 市場多空趨勢，輸出未來一週的倉位建議：**加碼 / 持平 / 減碼**。
 
 > **核心特色**：不使用固定的 if/else 規則，而是針對每支股票的過去 6 個月歷史數據，計算每個技術條件的實際預測準確率，再決定信號強度。同一個條件（如 RSI 超買）在不同股票上可能是截然相反的信號。並自動判斷台股大盤多空趨勢，在強多頭市場調高持倉偏向、提高減倉門檻，避免逆勢減碼。
 
@@ -50,7 +50,10 @@ claude .
 ```bash
 uv run python3 tech_analysis.py 2330
 uv run python3 tech_analysis.py 2330 2317 0050
+uv run python3 tech_analysis.py 台積電 聯發科 廣達
 ```
+
+可輸入股票代號或公司名稱（上市、上櫃皆可），兩者可混用。名稱先比對公司簡稱，找不到時再找「唯一包含」該字串的公司（如 `日月光` → 3711 日月光投控）；對到多檔或找不到時會提示改用代號。ETF 請用代號（如 `0050`）。`fundamentals.py`、`news.py`、`backtest_annual.py` 同樣適用。
 
 會直接輸出完整的中文報告，包含：
 - 技術指標快照（KD / RSI / MACD / 均線 / 乖離率）
@@ -66,7 +69,11 @@ uv run python3 tech_analysis.py 2330 2317 0050
 ```
 /stock-analysis 2330
 /stock-analysis 2330 2317 0050
+/stock-analysis 台積電
+/stock-analysis 台積電 聯發科 廣達
 ```
+
+同樣可直接輸入公司名稱（如 `台積電`），也可與代號混用。
 
 Claude 會執行同一份分析，呈現上述完整報告，並額外附上 3–4 句中文分析師評語（解讀最關鍵的信號、籌碼面是否與技術面同向、整體風險評估）。
 
@@ -240,7 +247,7 @@ Claude 會執行同一份分析，呈現上述完整報告，並額外附上 3�
 | 股價歷史數據 | Yahoo Finance（`yfinance`） | 400 日，含 MA200 所需資料量 |
 | 三大法人買賣超（上市） | 台灣證交所 TWSE T86 API | 近 20 個交易日，平行抓取 |
 | 三大法人買賣超（上櫃） | 櫃買中心 TPEx API | 同上 |
-| 股票名稱驗證 | TWSE OpenAPI t187ap03_L | 一次取全部上市公司簡稱，防止代號輸錯 |
+| 公司名稱 ↔ 代號 | TWSE OpenAPI t187ap03_L + TPEx OpenAPI mopsfin_t187ap03_O | 一次取全部上市／上櫃公司簡稱，用於顯示名稱與公司名稱輸入 |
 | VIX 恐慌指數 | Yahoo Finance（`^VIX`） | 近 5 日 |
 | 台股趨勢（TWII vs MA200） | Yahoo Finance（`^TWII`） | 近 400 日，計算 MA200 |
 | 巴菲特指標 | TWSE MI_INDEX / `^TWII` 估算 | 台灣市值 / GDP |

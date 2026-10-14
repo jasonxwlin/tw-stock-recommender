@@ -39,6 +39,7 @@ from tech_analysis import (  # pylint: disable=wrong-import-position
     compute_outcomes,
     backtest_conditions,
     baseline_stats,
+    resolve_symbol,
 )
 
 # ─── 常數 ─────────────────────────────────────────────────────────────────────
@@ -508,7 +509,7 @@ def _parse_cli_args() -> argparse.Namespace:
 
 
 def _resolve_sim_window(args: argparse.Namespace) -> tuple:
-    symbol       = args.symbol.upper()
+    symbol       = resolve_symbol(args.symbol)
     sim_end_dt   = datetime.strptime(args.end,   '%Y-%m-%d') if args.end   else datetime.now()
     sim_start_dt = datetime.strptime(args.start, '%Y-%m-%d') if args.start else None
     span_years   = ((sim_end_dt - (sim_start_dt or (sim_end_dt - timedelta(days=365*3)))).days / 365.25) + 0.6

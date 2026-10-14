@@ -10,7 +10,7 @@ Comprehensive Taiwan stock analysis. Orchestrates available sub-analyses and com
 
 ## Steps
 
-1. Parse `$ARGUMENTS` to get stock symbol(s).
+1. Parse `$ARGUMENTS` to get stock symbol(s). Codes or company names (e.g. 台積電) both work — the scripts resolve names themselves via `resolve_symbol()`.
 
 2. Run `/tech-analysis $ARGUMENTS` and present its full output. The 加碼/減碼/持平 recommendation comes **only** from this module.
 

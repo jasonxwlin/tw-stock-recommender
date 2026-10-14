@@ -17,6 +17,9 @@ source .env
 # Run technical analysis on one or more Taiwan stock codes
 python3 tech_analysis.py 2330
 python3 tech_analysis.py 2330 2317 0050
+# Company names work too (all four scripts) — resolved via fetchers.resolve_symbol()
+# against the TWSE+TPEx company list: exact short name, else unique substring
+python3 tech_analysis.py 台積電 日月光
 
 # Run fundamental snapshot (current P/E & P/B, revenue trend, profitability trend)
 # Reference only — does not score or feed into tech_analysis.py's recommendation
