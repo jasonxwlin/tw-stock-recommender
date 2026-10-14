@@ -46,6 +46,7 @@ from fetchers import (  # pylint: disable=wrong-import-position
     fetch_company_name,
     fetch_price_data,
     fetch_stock_earnings_date,
+    resolve_symbol,
 )
 from market_indicators import fetch_buffett_indicator, fetch_vix  # pylint: disable=wrong-import-position
 from report import (  # pylint: disable=wrong-import-position
@@ -64,7 +65,7 @@ __all__ = [
     '_REC_ICON', '_REC_RANK', '_direction_label',
     'HORIZON', 'MOVE_THRESH', 'backtest_conditions', 'baseline_stats', 'compute_outcomes',
     'build_conditions', 'calc_indicators', 'fetch_company_name', 'fetch_price_data',
-    'fetch_stock_earnings_date', 'fetch_buffett_indicator', 'fetch_vix',
+    'fetch_stock_earnings_date', 'fetch_buffett_indicator', 'fetch_vix', 'resolve_symbol',
     'fmt_report', 'fmt_summary_table',
     'analyze', 'analyze_institutional', 'fetch_institutional', 'fetch_market_regime',
     'fetch_macro_events', 'fetch_futures_sentiment', 'fetch_futures_net_position',
@@ -810,8 +811,8 @@ def main():
     """CLI entry point: analyze each symbol in sys.argv, print a report per stock,
     then a sorted summary table if more than one symbol was given."""
     if len(sys.argv) < 2:
-        print("用法: python3 tech_analysis.py <代號1> [代號2] ...")
-        print("範例: python3 tech_analysis.py 2330 2317 0050")
+        print("用法: python3 tech_analysis.py <代號或公司名稱1> [代號或公司名稱2] ...")
+        print("範例: python3 tech_analysis.py 2330 2317 0050  或  python3 tech_analysis.py 台積電 聯發科")
         sys.exit(1)
 
     print("正在抓取總體市場指標 (VIX / 巴菲特指標 / 台股趨勢 / 外資期貨淨部位)...")
@@ -828,8 +829,8 @@ def main():
 
     results = []
     for sym in sys.argv[1:]:
-        sym = sym.strip().upper()
         try:
+            sym = resolve_symbol(sym)
             print(f"\n正在抓取 {sym} 價格數據...")
             df, ticker = fetch_price_data(sym)
             is_otc = ticker.endswith('.TWO')

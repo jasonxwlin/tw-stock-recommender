@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 import requests  # pylint: disable=wrong-import-position
 import yfinance as yf  # pylint: disable=wrong-import-position
 
-from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error  # pylint: disable=wrong-import-position
+from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error, resolve_symbol  # pylint: disable=wrong-import-position
 
 _UA = {"User-Agent": "Mozilla/5.0"}
 
@@ -144,13 +144,13 @@ def fmt_report(symbol: str, company_name: str, r: dict) -> str:
 def main():
     """CLI entry point: print a news snapshot for each symbol in sys.argv."""
     if len(sys.argv) < 2:
-        print("用法: python3 news.py <代號1> [代號2] ...")
-        print("範例: python3 news.py 2330 2317")
+        print("用法: python3 news.py <代號或公司名稱1> [代號或公司名稱2] ...")
+        print("範例: python3 news.py 2330 2317  或  python3 news.py 台積電")
         sys.exit(1)
 
     for sym in sys.argv[1:]:
-        sym = sym.strip().upper()
         try:
+            sym = resolve_symbol(sym)
             print(f"\n正在抓取 {sym} 消息面數據...")
             _, ticker = fetch_price_data(sym)
             is_otc = ticker.endswith('.TWO')

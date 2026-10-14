@@ -52,6 +52,35 @@ def test_load_company_cache_is_a_noop_once_populated():
     ta._COMPANY_CACHE.clear()
 
 
+def test_load_company_cache_merges_twse_and_tpex():
+    ta._COMPANY_CACHE.clear()
+    twse = _resp(json_data=[{'公司代號': '2330', '公司簡稱': '台積電'}])
+    tpex = _resp(json_data=[{'SecuritiesCompanyCode': '6274', 'CompanyAbbreviation': '台燿'}])
+    with mock.patch.object(ta.requests, "get", side_effect=[twse, tpex]):
+        assert ta.fetch_company_name('6274') == '台燿'
+        assert ta.fetch_company_name('2330') == '台積電'
+    ta._COMPANY_CACHE.clear()
+
+
+def test_resolve_symbol_codes_and_names():
+    ta._COMPANY_CACHE.clear()
+    ta._COMPANY_CACHE.update({'2330': '台積電', '3711': '日月光投控', '2382': '廣達',
+                              '2301': '光寶科', '2409': '友達光電'})
+    with mock.patch.object(ta.requests, "get") as m:
+        assert ta.resolve_symbol(' 2330 ') == '2330'     # code passes through
+        assert ta.resolve_symbol('00878') == '00878'     # ETF code not in cache still passes
+        assert ta.resolve_symbol('台積電') == '2330'      # exact name
+        assert ta.resolve_symbol('日月光') == '3711'      # unique substring
+        for bad in ('光', '不存在'):                       # ambiguous / unknown
+            try:
+                ta.resolve_symbol(bad)
+                assert False, bad
+            except ValueError:
+                pass
+        m.assert_not_called()
+    ta._COMPANY_CACHE.clear()
+
+
 # ── fetch_price_data ─────────────────────────────────────────────────────────
 
 def _ohlcv_df(n=5):
@@ -415,7 +444,8 @@ def _fake_df_inst():
 
 
 def test_main_happy_path_single_and_multi_symbol(monkeypatch, capsys):
-    monkeypatch.setattr(sys, "argv", ["tech_analysis.py", "2330", "2454"])
+    monkeypatch.setattr(sys, "argv", ["tech_analysis.py", "2330", "聯發科"])
+    monkeypatch.setitem(ta._COMPANY_CACHE, "2454", "聯發科")
     fake_df = _fake_ohlcv()
     fake_inst = _fake_df_inst()
 
