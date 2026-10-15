@@ -463,6 +463,7 @@ def test_main_happy_path_single_and_multi_symbol(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "重大事件提醒" in out
     assert "綜合比較表" in out  # >1 symbol → summary table printed
+    assert out.rstrip().endswith(ta.DISCLAIMER)
 
 
 def test_main_reports_error_and_continues_on_per_symbol_exception(monkeypatch, capsys):

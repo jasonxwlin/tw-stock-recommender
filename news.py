@@ -20,7 +20,9 @@ warnings.filterwarnings('ignore')
 import requests  # pylint: disable=wrong-import-position
 import yfinance as yf  # pylint: disable=wrong-import-position
 
-from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error, resolve_symbol  # pylint: disable=wrong-import-position
+from tech_analysis import (  # pylint: disable=wrong-import-position
+    DISCLAIMER, fetch_company_name, fetch_price_data, print_cli_error, resolve_symbol,
+)
 
 _UA = {"User-Agent": "Mozilla/5.0"}
 
@@ -117,25 +119,17 @@ def fmt_report(symbol: str, company_name: str, r: dict) -> str:
     name_str = f"  {company_name}" if company_name else ""
     lines.append(f"  股票代號: {symbol}{name_str}  [消息面快照 - 原始新聞列表，僅供參考，不評分]")
 
-    lines.append("-" * W)
-    zh = r.get('zh') or []
-    lines.append(f"  中文新聞（近7日，共{len(zh)}則）:")
-    if zh:
-        for it in zh:
+    for key, label in (('zh', '中文'), ('en', '英文')):
+        items = r.get(key) or []
+        lines.append("-" * W)
+        lines.append(f"  {label}新聞（近7日，共{len(items)}則）:")
+        if not items:
+            lines.append("    無資料")
+        for it in items:
             src = f"  [{it['source']}]" if it.get('source') else ""
             lines.append(f"    {it['pub_date']}  {it['title']}{src}")
-    else:
-        lines.append("    無資料")
-
-    lines.append("-" * W)
-    en = r.get('en') or []
-    lines.append(f"  英文新聞（近7日，共{len(en)}則）:")
-    if en:
-        for it in en:
-            src = f"  [{it['source']}]" if it.get('source') else ""
-            lines.append(f"    {it['pub_date']}  {it['title']}{src}")
-    else:
-        lines.append("    無資料")
+            if it.get('link'):
+                lines.append(f"      {it['link']}")
 
     lines.append("=" * W)
     return "\n".join(lines)
@@ -159,6 +153,7 @@ def main():
             print(fmt_report(sym, company_name, result))
         except Exception as e:
             print_cli_error(sym, e)
+    print(f"\n{DISCLAIMER}")
 
 
 if __name__ == "__main__":

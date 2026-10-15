@@ -50,6 +50,7 @@ from fetchers import (  # pylint: disable=wrong-import-position
 )
 from market_indicators import fetch_buffett_indicator, fetch_vix  # pylint: disable=wrong-import-position
 from report import (  # pylint: disable=wrong-import-position
+    DISCLAIMER,
     _REC_ICON,
     _REC_RANK,
     _direction_label,
@@ -62,7 +63,7 @@ from report import (  # pylint: disable=wrong-import-position
 # __all__ tells pylint's unused-import check that's intentional.
 __all__ = [
     'COND_GROUPS', 'MIN_SAMPLES', '_group_of', '_COMPANY_CACHE',
-    '_REC_ICON', '_REC_RANK', '_direction_label',
+    'DISCLAIMER', '_REC_ICON', '_REC_RANK', '_direction_label',
     'HORIZON', 'MOVE_THRESH', 'backtest_conditions', 'baseline_stats', 'compute_outcomes',
     'build_conditions', 'calc_indicators', 'fetch_company_name', 'fetch_price_data',
     'fetch_stock_earnings_date', 'fetch_buffett_indicator', 'fetch_vix', 'resolve_symbol',
@@ -851,6 +852,7 @@ def main():
     if len(results) > 1:
         print()
         print(fmt_summary_table(results))
+    print(f"\n{DISCLAIMER}")
 
 
 if __name__ == "__main__":

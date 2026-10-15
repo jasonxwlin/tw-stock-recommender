@@ -11,6 +11,14 @@ from backtest_engine import MOVE_THRESH
 _REC_ICON = {"強力加碼": "🚀", "加碼": "↑", "持平": "→", "減碼": "↓", "強力減碼": "⚠"}
 _REC_RANK = {"強力加碼": 5, "加碼": 4, "持平": 3, "減碼": 2, "強力減碼": 1}
 
+# Printed once at the end of every CLI script's output (tech/fundamentals/news/backtest).
+DISCLAIMER = (
+    "免責聲明：本分析僅供學術研究與個人參考，不構成任何投資建議或邀約。"
+    "所有結果均基於歷史技術數據，過去績效不代表未來表現。"
+    "本工具不考慮個人財務狀況與風險承受能力，投資人應自行判斷並承擔一切投資決策之責任。"
+    "資料來源為公開 API，不保證即時性與正確性。請在必要時諮詢合格之證券投資顧問。"
+)
+
 
 def _direction_label(excess: float, n: int) -> str:
     """Label a condition based on its excess edge vs baseline."""
