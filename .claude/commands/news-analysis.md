@@ -7,7 +7,7 @@ Run a news snapshot on one or more Taiwan stock symbols. Reference only — does
    python3 news.py $ARGUMENTS
    ```
 
-2. Present the raw headline list (Traditional Chinese via Google News RSS, English via yfinance — both last 7 days).
+2. Present the raw headline list (Traditional Chinese via Google News RSS, English via yfinance — both last 7 days). Each headline is followed by its source link in the script output — keep it: render headlines as markdown links `[標題](url)`, and whenever a summary bullet cites a specific headline, attach that link after it.
 
 3. Read the headlines yourself and write a short Traditional Chinese summary per stock:
    - 2–4 bullet points on the main themes (e.g. 法說會/財報、供應鏈動態、政策消息、大戶動向、總經連動)

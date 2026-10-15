@@ -75,14 +75,17 @@ def test_fetch_news_combines_zh_and_en_and_defaults_query_to_symbol():
 
 def test_fmt_report_renders_populated_sections():
     r = {
-        'zh': [{'pub_date': '2026-09-01', 'title': '台積電新聞', 'source': '天下雜誌'}],
-        'en': [{'pub_date': '2026-09-01', 'title': 'TSMC news', 'source': None}],
+        'zh': [{'pub_date': '2026-09-01', 'title': '台積電新聞', 'source': '天下雜誌',
+                'link': 'https://example.com/zh'}],
+        'en': [{'pub_date': '2026-09-01', 'title': 'TSMC news', 'source': None, 'link': None}],
     }
     report = n.fmt_report('2330', '台積電', r)
     assert '台積電' in report
     assert '共1則' in report
     assert '[天下雜誌]' in report
     assert 'TSMC news' in report
+    assert 'https://example.com/zh' in report
+    assert report.count('http') == 1  # missing link → no link line
 
 
 def test_fmt_report_handles_no_headlines():
