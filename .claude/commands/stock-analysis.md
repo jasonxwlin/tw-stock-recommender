@@ -28,11 +28,6 @@ Comprehensive Taiwan stock analysis. Orchestrates available sub-analyses and com
 
    > **分析模組**: 技術面 ✅  基本面 ✅（僅供參考，不計分）  消息面 ✅（僅供參考，不計分）
 
-7. **Always** end the whole response with the 免責聲明 block below, verbatim, as the very last thing — every run, single or multi-stock. The sub-commands each define the same block; when orchestrating, print it **once** here at the bottom instead of after each section.
-
----
-> **免責聲明**：本分析僅供學術研究與個人參考，不構成任何投資建議或邀約。所有結果均基於歷史技術數據，過去績效不代表未來表現。本工具不考慮個人財務狀況與風險承受能力，投資人應自行判斷並承擔一切投資決策之責任。資料來源為公開 API，不保證即時性與正確性。**請在必要時諮詢合格之證券投資顧問。**
-
 ## Notes
 - Stock codes are Taiwan exchange codes (e.g. 2330=台積電, 0050=台灣50 ETF)
 - This command is the entry point; it delegates to sub-commands for each analysis type

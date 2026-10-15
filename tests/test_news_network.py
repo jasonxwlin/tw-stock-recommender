@@ -111,7 +111,9 @@ def test_main_happy_path(monkeypatch, capsys):
          mock.patch.object(n, "fetch_company_name", return_value="台積電"), \
          mock.patch.object(n, "fetch_news", return_value={'zh': [], 'en': []}):
         n.main()
-    assert "台積電" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "台積電" in out
+    assert out.rstrip().endswith(n.DISCLAIMER)
 
 
 def test_main_reports_error_and_continues_on_exception(monkeypatch, capsys):

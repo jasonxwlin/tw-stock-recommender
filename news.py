@@ -20,7 +20,9 @@ warnings.filterwarnings('ignore')
 import requests  # pylint: disable=wrong-import-position
 import yfinance as yf  # pylint: disable=wrong-import-position
 
-from tech_analysis import fetch_price_data, fetch_company_name, print_cli_error, resolve_symbol  # pylint: disable=wrong-import-position
+from tech_analysis import (  # pylint: disable=wrong-import-position
+    DISCLAIMER, fetch_company_name, fetch_price_data, print_cli_error, resolve_symbol,
+)
 
 _UA = {"User-Agent": "Mozilla/5.0"}
 
@@ -151,6 +153,7 @@ def main():
             print(fmt_report(sym, company_name, result))
         except Exception as e:
             print_cli_error(sym, e)
+    print(f"\n{DISCLAIMER}")
 
 
 if __name__ == "__main__":

@@ -34,6 +34,7 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 import yfinance as yf  # pylint: disable=wrong-import-position
 from tech_analysis import (  # pylint: disable=wrong-import-position
+    DISCLAIMER,
     calc_indicators,
     build_conditions,
     compute_outcomes,
@@ -672,6 +673,7 @@ def main():
 
     # ── 5. 報告 ──────────────────────────────────────────────────────────────
     _print_backtest_report(days, sim, m, W)
+    print(DISCLAIMER)
 
 
 if __name__ == '__main__':
