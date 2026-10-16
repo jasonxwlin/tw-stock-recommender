@@ -43,7 +43,7 @@ No build step — `tests/test_*.py` are assert-based self-checks covering both p
 
 ## Architecture
 
-The project is a Taiwan stock technical analysis tool exposed as Claude Code Skills (`/stock-analysis`, `/tech-analysis`, `/fundamental-analysis`, `/news-analysis`). Skills are defined in `.claude/commands/`. `/stock-analysis` is the orchestrator: it runs `/tech-analysis` (which produces the only scored 加碼/減碼/持平 recommendation), `/fundamental-analysis`, and `/news-analysis` (both reference-only, no score) and presents all three.
+The project is a Taiwan stock technical analysis tool exposed as Claude Code Skills (`/stock-analysis`, `/tech-analysis`, `/fundamental-analysis`, `/news-analysis`). The workflow itself lives in `AGENTS.md` (single source of truth, shared with OpenAI Codex via `.agents/skills/` and Gemini CLI via `.gemini/`); `.claude/commands/` files are thin pointers to it — edit `AGENTS.md`, not the per-tool files. `/stock-analysis` is the orchestrator: it runs `/tech-analysis` (which produces the only scored 加碼/減碼/持平 recommendation), `/fundamental-analysis`, and `/news-analysis` (both reference-only, no score) and presents all three.
 
 ### `tech_analysis.py` — core engine
 

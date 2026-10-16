@@ -1,0 +1,4 @@
+description = "Taiwan stock analysis: 技術面 score + 基本面 + 消息面 (codes or company names)"
+prompt = """
+Follow the 股票分析流程 in AGENTS.md at the repo root, exactly as written there, for these stocks: {{args}}
+"""
