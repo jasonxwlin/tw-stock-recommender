@@ -66,8 +66,7 @@ jobs:
         id: pylint
         run: |
           SCORE=$(pylint --exit-zero \
-            tech_analysis.py fetchers.py conditions.py backtest_engine.py \
-            market_indicators.py report.py fundamentals.py news.py backtest_annual.py \
+            tech_analysis.py fundamentals.py news.py backtest_annual.py core/ \
             | grep -oP 'rated at \K[0-9.]+(?=/10)')
           echo "score=$SCORE" >> "$GITHUB_OUTPUT"
 

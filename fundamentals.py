@@ -25,7 +25,7 @@ from tech_analysis import (  # pylint: disable=wrong-import-position
     DISCLAIMER, fetch_company_name, fetch_price_data, print_cli_error, resolve_symbol,
 )
 
-_VALUATION_CACHE_FILE = Path(__file__).parent / "valuation_cache.json"
+_VALUATION_CACHE_FILE = Path(__file__).parent / "data" / "valuation_cache.json"
 _TWSE_HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.twse.com.tw/'}
 _TPEX_HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.tpex.org.tw/'}
 _MOPS_HDR = {'User-Agent': 'Mozilla/5.0'}

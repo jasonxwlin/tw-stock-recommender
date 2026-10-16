@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
-from backtest_engine import MOVE_THRESH
+from core.backtest_engine import MOVE_THRESH
 
 _REC_ICON = {"強力加碼": "🚀", "加碼": "↑", "持平": "→", "減碼": "↓", "強力減碼": "⚠"}
 _REC_RANK = {"強力加碼": 5, "加碼": 4, "持平": 3, "減碼": 2, "強力減碼": 1}
