@@ -62,9 +62,19 @@ uv run python3 tech_analysis.py 台積電 聯發科 廣達
 - **歷史回測表格**（每個條件的實際預測準確率）
 - 倉位建議（加碼 / 持平 / 減碼）
 
-### 方式二：Claude Code Skill（非必要，額外提供分析師評語）
+### 方式二：AI Agent 指令（非必要，額外提供綜合報告與評語）
 
-若有安裝 Claude Code，在其中輸入：
+支援 Claude Code、OpenAI Codex、Gemini CLI。三者共用同一份流程說明 `AGENTS.md`（技術面＋基本面＋消息面，新聞附連結與一句摘要，結尾附免責聲明），各工具的指令檔只是指向它：
+
+| 工具 | 指令 | 設定檔 |
+|---|---|---|
+| Claude Code | `/stock-analysis 台積電 聯發科` | `.claude/commands/` |
+| Gemini CLI | `/stock-analysis 台積電 聯發科` | `.gemini/commands/`、`.gemini/settings.json`（讓 Gemini 讀 `AGENTS.md`） |
+| OpenAI Codex | 直接說「分析股票 台積電 聯發科」，或指名 `stock-analysis` skill | `.agents/skills/stock-analysis/`，並自動讀 `AGENTS.md` |
+
+其他支援 `AGENTS.md` 的工具（Cursor、Copilot 等）直接說「分析股票 台積電」即可。
+
+以 Claude Code 為例，輸入：
 
 ```
 /stock-analysis 2330
@@ -75,7 +85,7 @@ uv run python3 tech_analysis.py 台積電 聯發科 廣達
 
 同樣可直接輸入公司名稱（如 `台積電`），也可與代號混用。
 
-Claude 會執行同一份分析，呈現上述完整報告，並額外附上 3–4 句中文分析師評語（解讀最關鍵的信號、籌碼面是否與技術面同向、整體風險評估）。
+AI 會依序執行三支腳本，呈現完整報告，並額外附上中文分析師評語（解讀最關鍵的信號、籌碼面是否與技術面同向、整體風險評估）。
 
 ---
 
