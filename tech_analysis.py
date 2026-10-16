@@ -29,7 +29,7 @@ import yfinance as yf  # pylint: disable=wrong-import-position
 # Split out of this file to satisfy too-many-lines; re-exported here so every
 # existing `tech_analysis.X` / `from tech_analysis import X` call site (tests,
 # fundamentals.py, news.py, backtest_annual.py) keeps working unchanged.
-from backtest_engine import (  # pylint: disable=wrong-import-position
+from core.backtest_engine import (  # pylint: disable=wrong-import-position
     COND_GROUPS,
     HORIZON,
     MIN_SAMPLES,
@@ -39,8 +39,8 @@ from backtest_engine import (  # pylint: disable=wrong-import-position
     baseline_stats,
     compute_outcomes,
 )
-from conditions import build_conditions  # pylint: disable=wrong-import-position
-from fetchers import (  # pylint: disable=wrong-import-position
+from core.conditions import build_conditions  # pylint: disable=wrong-import-position
+from core.fetchers import (  # pylint: disable=wrong-import-position
     _COMPANY_CACHE,
     calc_indicators,
     fetch_company_name,
@@ -48,8 +48,8 @@ from fetchers import (  # pylint: disable=wrong-import-position
     fetch_stock_earnings_date,
     resolve_symbol,
 )
-from market_indicators import fetch_buffett_indicator, fetch_vix  # pylint: disable=wrong-import-position
-from report import (  # pylint: disable=wrong-import-position
+from core.market_indicators import fetch_buffett_indicator, fetch_vix  # pylint: disable=wrong-import-position
+from core.report import (  # pylint: disable=wrong-import-position
     DISCLAIMER,
     _REC_ICON,
     _REC_RANK,
@@ -428,7 +428,7 @@ def fetch_market_regime() -> dict:
 # and let the sample accumulate naturally over repeated invocations instead of
 # ever bulk-scraping. Below FUTURES_MIN_SAMPLES the signal contributes 0.
 
-FUTURES_CACHE_FILE  = Path(__file__).parent / "taifex_net_pos_cache.json"
+FUTURES_CACHE_FILE  = Path(__file__).parent / "data" / "taifex_net_pos_cache.json"
 FUTURES_MIN_SAMPLES = 12  # need >=3 per quartile bucket before trusting it at all
 
 

@@ -17,7 +17,7 @@ source .env
 # Run technical analysis on one or more Taiwan stock codes
 python3 tech_analysis.py 2330
 python3 tech_analysis.py 2330 2317 0050
-# Company names work too (all four scripts) — resolved via fetchers.resolve_symbol()
+# Company names work too (all four scripts) — resolved via core.fetchers.resolve_symbol()
 # against the TWSE+TPEx company list: exact short name, else unique substring
 python3 tech_analysis.py 台積電 日月光
 
@@ -48,13 +48,16 @@ The project is a Taiwan stock technical analysis tool exposed as Claude Code Ski
 ### `tech_analysis.py` — core engine
 
 `tech_analysis.py` is the orchestrator and entry point (`main()`); the pipeline
-stages below are split across sibling modules to stay under pylint's
+stages below are split across modules in `core/` to stay under pylint's
 `too-many-lines`, and `tech_analysis.py` re-imports every public/test-facing
 name from them (via `__all__`) so `from tech_analysis import X` / `tech_analysis.X`
-keeps working unchanged: `fetchers.py` (price/company/earnings data + indicator
-calculation), `conditions.py` (`build_conditions()`), `backtest_engine.py`
-(`compute_outcomes()`/`backtest_conditions()`/`baseline_stats()`), `market_indicators.py`
-(`fetch_vix()`/`fetch_buffett_indicator()`), `report.py` (`fmt_report()`/`fmt_summary_table()`).
+keeps working unchanged: `core/fetchers.py` (price/company/earnings data + indicator
+calculation), `core/conditions.py` (`build_conditions()`), `core/backtest_engine.py`
+(`compute_outcomes()`/`backtest_conditions()`/`baseline_stats()`), `core/market_indicators.py`
+(`fetch_vix()`/`fetch_buffett_indicator()`), `core/report.py` (`fmt_report()`/`fmt_summary_table()`/`DISCLAIMER`).
+Repo root keeps only the four CLI entry points (`tech_analysis.py`, `fundamentals.py`,
+`news.py`, `backtest_annual.py`); `core/` modules import each other as `core.X`.
+Cache files live in `data/` (`valuation_cache.json`, `taifex_net_pos_cache.json`).
 Institutional-investor fetching/scoring, futures positioning, macro events,
 `analyze()`, and `main()` stay in `tech_analysis.py` itself.
 
@@ -84,7 +87,7 @@ Independent module, imports `fetch_price_data()`/`fetch_company_name()` from `te
 
 All three fetches fail independently and silently (same pattern as `tech_analysis.py`'s `fetch_macro_events()`) — a missing section just prints "資料無法取得" rather than aborting the run.
 
-Valuation months are cached to `valuation_cache.json` (same pattern as `taifex_net_pos_cache.json`) — a past month never changes once published so it's fetched once and kept forever; only the current (still-accumulating) month is re-fetched every call. TWSE's `BWIBBU` endpoint has anti-flood protection (HTTP 428) that a cold multi-month, multi-stock fetch trips almost immediately, so rather than bursting through the full 12-month target in one run, only one new past month is fetched per call — the rest of the window backfills gradually over ~12 repeated invocations.
+Valuation months are cached to `data/valuation_cache.json` (same pattern as `data/taifex_net_pos_cache.json`) — a past month never changes once published so it's fetched once and kept forever; only the current (still-accumulating) month is re-fetched every call. TWSE's `BWIBBU` endpoint has anti-flood protection (HTTP 428) that a cold multi-month, multi-stock fetch trips almost immediately, so rather than bursting through the full 12-month target in one run, only one new past month is fetched per call — the rest of the window backfills gradually over ~12 repeated invocations.
 
 ### `news.py` — news snapshot (reference only)
 
