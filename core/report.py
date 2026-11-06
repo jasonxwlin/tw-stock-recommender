@@ -97,6 +97,8 @@ def _fmt_market(r: dict, w: int) -> list[str]:
     lines = ["-" * w, "  總體市場指標:"]
     if regime:
         twii_str = f"TWII {regime['twii']:.0f} / MA200 {regime['ma200']:.0f}" if regime.get('twii') else ""
+        if regime.get('ma60'):
+            twii_str += f" / MA60 {regime['ma60']:.0f}"
         bonus_str = f"  分數調整 {regime['bonus']:+.2f}" if regime.get('bonus') is not None else ""
         lines.append(f"    台股趨勢: {twii_str}  [{regime['regime']}]{bonus_str}")
     if vix:
@@ -206,11 +208,12 @@ def _fmt_verdict(r: dict, w: int) -> list[str]:
     reg_str   = f"  市場{reg_name}({reg_bonus:+.2f})" if reg_bonus != 0 else ""
     fut_bonus = r.get('futures_bonus', 0.0)
     fut_str   = f"  期貨籌碼({fut_bonus:+.2f})" if fut_bonus != 0 else ""
+    gate_str  = "（大盤跌破季線，看多技術分不計）" if r.get('tech_gated') else ""
     rec  = r['recommendation']
     icon = _REC_ICON.get(rec, "")
     return [
         "-" * w,
-        f"  技術分數: {r['tech_score']:+.3f}  "
+        f"  技術分數: {r['tech_score']:+.3f}{gate_str}  "
         f"籌碼分數: {r['inst_score']:+d}(×0.12={r['inst_score']*0.12:+.2f})"
         f"{reg_str}{fut_str}  合計: {r['combined']:+.3f}",
         f"  ▶ 未來一週建議: 【{rec}】 {icon}",

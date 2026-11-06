@@ -41,6 +41,8 @@ from tech_analysis import (  # pylint: disable=wrong-import-position
     backtest_conditions,
     baseline_stats,
     resolve_symbol,
+    MA60_GATE_BONUS,
+    ma60_gate,
 )
 
 # ─── 常數 ─────────────────────────────────────────────────────────────────────
@@ -73,6 +75,7 @@ def fetch_twii_regime(years: float = 3.6, end_date: datetime | None = None) -> p
       TWII / MA200 ≥ 1.00  → +0.15  (多頭)
       TWII / MA200 ≥ 0.95  →  0.00  (中性)
       TWII / MA200 <  0.95 → -0.15  (空頭)
+      TWII < MA60          → MA60_GATE_BONUS (跌破季線; overrides the above)
     Fetches extra history so MA200 is valid from the start of the sim period.
     """
     end   = end_date or datetime.now()
@@ -92,6 +95,7 @@ def fetch_twii_regime(years: float = 3.6, end_date: datetime | None = None) -> p
     bonus[(ratio >= 0.95) & (ratio < 1.00)] = 0.0
     bonus[ratio < 0.95]  = -0.15
     bonus[ma200.isna()]  = 0.0   # not enough history yet
+    bonus[close < close.rolling(60).mean()] = MA60_GATE_BONUS  # same gate as tech_analysis
     return bonus
 
 
@@ -161,7 +165,8 @@ def get_signal(window: pd.DataFrame, regime_bonus: float = 0.0) -> tuple[str, fl
             if grp not in group_best or abs(stats['weight']) > abs(group_best[grp]['weight']):
                 group_best[grp] = stats
 
-        score = sum(s['weight'] for s in group_best.values()) + regime_bonus
+        tech  = sum(s['weight'] for s in group_best.values())
+        score = ma60_gate(tech, regime_bonus == MA60_GATE_BONUS) + regime_bonus
         return _tier_from_score(score, p), score
     except Exception:
         return '持平', 0.0
@@ -585,13 +590,13 @@ def _load_backtest_context(symbol: str, span_years: float, sim_end_dt: datetime,
 
 def _print_regime_distribution(days: list[dict], sim_n: int, W: int) -> None:
     print(f"\n{'─'*W}")
-    regime_map = {0.25: '強多頭', 0.15: '多頭', 0.0: '中性', -0.15: '空頭'}
+    regime_map = {0.25: '強多頭', 0.15: '多頭', 0.0: '中性', -0.15: '空頭', MA60_GATE_BONUS: '跌破季線'}
     regime_cnt: dict[str, int] = {}
     for d in days:
         label = regime_map.get(d.get('regime_bonus', 0.0), '中性')
         regime_cnt[label] = regime_cnt.get(label, 0) + 1
-    print(f"  台股趨勢分佈（TWII vs MA200，共 {sim_n} 天）")
-    for lbl in ['強多頭', '多頭', '中性', '空頭']:
+    print(f"  台股趨勢分佈（TWII vs MA200/MA60，共 {sim_n} 天）")
+    for lbl in ['強多頭', '多頭', '中性', '空頭', '跌破季線']:
         cnt = regime_cnt.get(lbl, 0)
         pct = cnt / sim_n * 100
         print(f"  {lbl:4s}  {cnt:4d}天 ({pct:5.1f}%)")

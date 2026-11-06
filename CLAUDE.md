@@ -71,7 +71,7 @@ Data flows in this order:
 
 4. **Backtest** — `backtest_conditions()` runs a walk-forward backtest over the past ~125 trading days. For each condition it computes the historical up/down rates and "excess margin" vs baseline (= condition's net edge minus the stock's natural drift). This excess margin is the scoring weight.
 
-5. **Score** — `analyze()` aggregates: technical score (sum of excess margins weighted by confidence) + institutional score (fixed rules: foreign/trust consecutive buys/sells) × 0.12 + market regime adjustment (+0.25 in 強多頭, down to -0.15 in 空頭). Thresholds: ≥+0.60 強力加碼, ≥+0.25 加碼, ≤-0.25 減碼 (≤-0.40 in 強多頭), ≤-0.60 強力減碼 (≤-0.80 in 強多頭).
+5. **Score** — `analyze()` aggregates: technical score (sum of excess margins weighted by confidence) + institutional score (fixed rules: foreign/trust consecutive buys/sells) × 0.12 + market regime adjustment (+0.25 in 強多頭, down to -0.15 in 空頭; TWII < MA60 overrides as 跌破季線: -0.30 and the bullish part of the tech score dropped via `ma60_gate()` — shared with `backtest_annual.py`). Thresholds: ≥+0.60 強力加碼, ≥+0.25 加碼, ≤-0.25 減碼 (≤-0.40 in 強多頭), ≤-0.60 強力減碼 (≤-0.80 in 強多頭).
 
 6. **Output** — `fmt_report()` formats the full report including indicator snapshot, institutional breakdown, condition backtest table, and final recommendation. When multiple symbols are passed, `main()` also prints `fmt_summary_table()` at the end — a comparison table pre-sorted 強力加碼 → 加碼 → 持平 → 減碼 → 強力減碼 (ties broken by combined score, descending), via the shared `_REC_RANK`/`_REC_ICON` constants.
 
@@ -106,4 +106,4 @@ Simulates 3 years of daily position management using the tech score only (no ins
 
 - `MOVE_THRESH` — price move threshold (%) for classifying up/down outcomes in backtest (default 1.5%, raised to 2% in 強多頭)
 - `LOOKBACK` — days of history for per-stock signal backtest (~125 trading days)
-- Regime thresholds: TWII/MA200 ≥1.05 → 強多頭, ≥1.00 → 多頭, ≥0.95 → 中性, <0.95 → 空頭
+- Regime thresholds: TWII/MA200 ≥1.05 → 強多頭, ≥1.00 → 多頭, ≥0.95 → 中性, <0.95 → 空頭; TWII < MA60 → 跌破季線 (`MA60_GATE_BONUS` -0.30, overrides the MA200 bucket)

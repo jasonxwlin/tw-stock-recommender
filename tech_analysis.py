@@ -70,6 +70,7 @@ __all__ = [
     'fmt_report', 'fmt_summary_table',
     'analyze', 'analyze_institutional', 'fetch_institutional', 'fetch_market_regime',
     'fetch_macro_events', 'fetch_futures_sentiment', 'fetch_futures_net_position',
+    'MA60_GATE_BONUS', 'ma60_gate',
     'print_cli_error', 'main',
 ]
 
@@ -382,17 +383,32 @@ def fetch_macro_events(days_ahead: int = 7) -> list[dict]:
     return events
 
 
+# TWII < MA60 gate (2026-11 backtest, variant H): oversold-rebound signals kept
+# scoring 強力加碼 all through the Oct–Nov 2026 selloff while TWII fell ~18%. Below
+# MA60 the bullish part of the technical score is dropped and this tilt applied,
+# so the position ladder steps down instead of adding into a market-wide
+# downtrend. 8-stock 3y backtest: maxDD -41%→-35%, Sharpe 1.01→1.12, 10/1–11/6
+# -26%→-8%, 3y return ~flat (+164%→+160%).
+MA60_GATE_BONUS = -0.30
+
+
+def ma60_gate(tech_score: float, gated: bool) -> float:
+    """Drop the bullish part of tech_score while TWII is below its MA60."""
+    return min(tech_score, 0.0) if gated else tech_score
+
+
 def fetch_market_regime() -> dict:
     """
-    Determine market regime from Taiwan Weighted Index (^TWII) vs its MA200.
-    A bonus is added to the combined score to favour staying long in bull markets
-    and reducing exposure in bear markets.
+    Determine market regime from Taiwan Weighted Index (^TWII) vs its MA200,
+    overridden by the MA60 gate. A bonus is added to the combined score to favour
+    staying long in bull markets and reducing exposure in downtrends.
 
     Regime table:
-      TWII / MA200 ≥ 1.05  →  強多頭  bonus +0.25
-      TWII / MA200 ≥ 1.00  →  多頭    bonus +0.15
-      TWII / MA200 ≥ 0.95  →  中性    bonus  0.00
-      TWII / MA200 <  0.95 →  空頭    bonus -0.15
+      TWII < MA60          →  跌破季線  bonus -0.30, bullish tech score ignored
+      TWII / MA200 ≥ 1.05  →  強多頭    bonus +0.25
+      TWII / MA200 ≥ 1.00  →  多頭      bonus +0.15
+      TWII / MA200 ≥ 0.95  →  中性      bonus  0.00
+      TWII / MA200 <  0.95 →  空頭      bonus -0.15
     """
     try:
         df = yf.download("^TWII", period="400d", progress=False, auto_adjust=True)
@@ -415,7 +431,12 @@ def fetch_market_regime() -> dict:
             regime, bonus = '中性',    0.00
         else:
             regime, bonus = '空頭',   -0.15
-        return {'regime': regime, 'bonus': bonus, 'twii': current, 'ma200': ma200_v, 'ratio': ratio}
+        ma60_v = float(close.rolling(60).mean().iloc[-1])
+        gate   = current < ma60_v
+        if gate:
+            regime, bonus = '跌破季線', MA60_GATE_BONUS
+        return {'regime': regime, 'bonus': bonus, 'twii': current, 'ma200': ma200_v,
+                'ma60': ma60_v, 'ratio': ratio, 'gate': gate}
     except Exception:
         return {'regime': '中性', 'bonus': 0.0}
 
@@ -756,15 +777,19 @@ def _price_snapshot(df: pd.DataFrame) -> dict:
 def _combine_and_recommend(tech_score: float, inst_score: float, macro: dict, rp: dict) -> dict:
     """Fold institutional/regime/futures adjustments into tech_score and pick a tier."""
     inst_normalized = inst_score * 0.12  # normalize (-5..+5) to tech_score's scale
-    # TWII vs MA200 bull/bear tilt so the strategy doesn't fight the tape
-    regime_bonus = (macro.get('regime') or {}).get('bonus', 0.0)
+    # TWII vs MA200 bull/bear tilt so the strategy doesn't fight the tape;
+    # below MA60 the bullish technical score is dropped entirely (ma60_gate)
+    regime       = macro.get('regime') or {}
+    regime_bonus = regime.get('bonus', 0.0)
+    tech_used    = ma60_gate(tech_score, bool(regime.get('gate')))
     # 外資 TXF 淨部位 + 空方口數，bucketed against its own historical excess edge;
     # 0 until enough cached samples exist (see fetch_futures_sentiment).
     futures = macro.get('futures')
     futures_bonus = (futures or {}).get('bonus', 0.0) + (futures or {}).get('short_bonus', 0.0)
-    combined = tech_score + inst_normalized + regime_bonus + futures_bonus
+    combined = tech_used + inst_normalized + regime_bonus + futures_bonus
 
     return {
+        'tech_gated':     tech_used != tech_score,
         'regime_bonus':   regime_bonus,
         'futures_bonus':  futures_bonus,
         'combined':       combined,
@@ -799,6 +824,7 @@ def analyze(df: pd.DataFrame, symbol: str, df_inst: pd.DataFrame, macro: dict | 
         'group_best':     group_best,
         'all_bt':         bt,
         'tech_score':     tech_score,
+        'tech_gated':     scores['tech_gated'],
         'inst_score':     inst_score,
         'combined':       scores['combined'],
         'recommendation': scores['recommendation'],
