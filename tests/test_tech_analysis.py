@@ -146,6 +146,16 @@ def test_analyze_recommendation_thresholds_neutral_regime():
     assert _analyze_with_fixed_tech_score(-0.59) == '減碼'
 
 
+def test_ma60_gate_drops_bullish_tech_score_only():
+    assert ta.ma60_gate(1.5, gated=True) == 0.0
+    assert ta.ma60_gate(-0.4, gated=True) == -0.4
+    assert ta.ma60_gate(1.5, gated=False) == 1.5
+    gate = {'regime': '跌破季線', 'bonus': ta.MA60_GATE_BONUS, 'gate': True}
+    # +2.0 oversold-rebound score would be 強力加碼; under the gate it's 0 - 0.30 → 減碼
+    assert _analyze_with_fixed_tech_score(2.0, regime=gate) == '減碼'
+    assert _analyze_with_fixed_tech_score(-0.4, regime=gate) == '強力減碼'   # -0.4 - 0.30 = -0.70
+
+
 def test_analyze_recommendation_depends_on_regime():
     # Same combined score (-0.70): 中性's strong=-0.60 catches it as 強力減碼,
     # but 強多頭's looser strong=-0.80 only downgrades it to 減碼.

@@ -343,9 +343,34 @@ def _twii_df_for_ratio(ratio: float, base: float = 10_000.0) -> pd.DataFrame:
 def test_fetch_market_regime_classifies_each_bucket():
     cases = [(1.10, '強多頭'), (1.02, '多頭'), (0.97, '中性'), (0.90, '空頭')]
     for ratio, expected in cases:
-        with mock.patch.object(ta.yf, "download", return_value=_twii_df_for_ratio(ratio)):
+        # rolling(60) mocked to sit below TWII so the MA60 gate stays open here
+        with mock.patch.object(ta.yf, "download", return_value=_twii_df_for_ratio(ratio)), \
+             mock.patch.object(pd.Series, "rolling", _rolling_with_low_ma60):
             result = ta.fetch_market_regime()
         assert result['regime'] == expected, (ratio, result)
+        assert result['gate'] is False
+
+
+_REAL_ROLLING = pd.Series.rolling
+
+
+def _rolling_with_low_ma60(self, window, *a, **kw):
+    r = _REAL_ROLLING(self, window, *a, **kw)
+    if window != 60:
+        return r
+    return mock.Mock(mean=lambda: pd.Series(0.0, index=self.index))
+
+
+def test_fetch_market_regime_ma60_gate_overrides_ma200_bucket():
+    # long uptrend (far above MA200) then a sharp drop below the 60-day average
+    closes = list(np.linspace(10_000, 20_000, 380)) + [19_000.0] * 20
+    df = pd.DataFrame({'Close': closes}, index=pd.bdate_range("2025-01-01", periods=400))
+    with mock.patch.object(ta.yf, "download", return_value=df):
+        result = ta.fetch_market_regime()
+    assert result['ratio'] >= 1.0          # MA200 alone would still say bull
+    assert result['gate'] is True
+    assert result['regime'] == '跌破季線'
+    assert result['bonus'] == ta.MA60_GATE_BONUS
 
 
 def test_fetch_market_regime_flattens_multiindex():
@@ -394,6 +419,13 @@ def test_fetch_futures_net_position_parses_html():
         net_pos, short_oi = ta.fetch_futures_net_position("20260101")
     assert net_pos == 1234.0
     assert short_oi == 5678.0
+
+
+def test_fetch_futures_net_position_rejects_prepublication_junk():
+    # 2026/10/22 14:36: page parsed to net 0 / short 3 before TAIFEX published the day
+    nums = [100, 200, 300, 400, 500, 600, 700, 800, 3, 900, 0]
+    with mock.patch.object(ta.requests, "post", return_value=_resp(text=_taifex_html(nums), status_code=200)):
+        assert ta.fetch_futures_net_position("20261022") == (None, None)
 
 
 def test_fetch_futures_net_position_handles_rate_limit_and_cloudflare():
