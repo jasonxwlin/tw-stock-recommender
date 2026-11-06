@@ -32,7 +32,8 @@ def test_insufficient_samples_scores_zero(tmp_path):
     cache_file.write_text(json.dumps({today: {"net": -1000.0, "short": 90000.0}}))  # 1 sample
 
     with mock.patch.object(ta, "FUTURES_CACHE_FILE", cache_file), \
-         mock.patch("yfinance.download", return_value=twii):
+         mock.patch("yfinance.download", return_value=twii), \
+         mock.patch.object(ta, "fetch_futures_net_position", return_value=(None, None)):  # backfill misses
         result = ta.fetch_futures_sentiment()
 
     assert result["bonus"] == 0.0
@@ -91,6 +92,24 @@ def test_legacy_float_cache_entries_still_work(tmp_path):
     # (mocked) live fetch is attempted and returns nothing — graceful, no crash.
     assert result["net_pos"] is None
     assert result["bonus"] == 0.0
+
+
+def test_backfills_recent_missing_days(tmp_path):
+    """Days the cron missed (machine asleep / rate-limited) get fetched on the next run."""
+    cache_file = tmp_path / "cache.json"
+    twii = _fake_twii()
+    today = twii.index[-1].strftime("%Y/%m/%d")
+    cache_file.write_text(json.dumps({today: {"net": -1000.0, "short": 90000.0}}))
+
+    with mock.patch.object(ta, "FUTURES_CACHE_FILE", cache_file), \
+         mock.patch("yfinance.download", return_value=twii), \
+         mock.patch.object(ta, "fetch_futures_net_position", return_value=(-2000.0, 91000.0)) as m:
+        ta.fetch_futures_sentiment()
+
+    cached = json.loads(cache_file.read_text())
+    assert m.call_count == ta.FUTURES_BACKFILL_DAYS  # today already cached → only past days fetched
+    for d in twii.index[-1 - ta.FUTURES_BACKFILL_DAYS:-1]:
+        assert cached[d.strftime("%Y/%m/%d")] == {"net": -2000.0, "short": 91000.0}
 
 
 def test_blocked_fetch_degrades_gracefully(tmp_path):

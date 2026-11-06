@@ -396,6 +396,13 @@ def test_fetch_futures_net_position_parses_html():
     assert short_oi == 5678.0
 
 
+def test_fetch_futures_net_position_rejects_prepublication_junk():
+    # 2026/10/22 14:36: page parsed to net 0 / short 3 before TAIFEX published the day
+    nums = [100, 200, 300, 400, 500, 600, 700, 800, 3, 900, 0]
+    with mock.patch.object(ta.requests, "post", return_value=_resp(text=_taifex_html(nums), status_code=200)):
+        assert ta.fetch_futures_net_position("20261022") == (None, None)
+
+
 def test_fetch_futures_net_position_handles_rate_limit_and_cloudflare():
     with mock.patch.object(ta.requests, "post", return_value=_resp(text="x", status_code=429)):
         assert ta.fetch_futures_net_position("20260101") == (None, None)

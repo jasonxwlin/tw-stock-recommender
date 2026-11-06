@@ -430,6 +430,11 @@ def fetch_market_regime() -> dict:
 
 FUTURES_CACHE_FILE  = Path(__file__).parent / "data" / "taifex_net_pos_cache.json"
 FUTURES_MIN_SAMPLES = 12  # need >=3 per quartile bucket before trusting it at all
+# Real 外資 TXF short OI is tens of thousands of lots. A pre-publication/partial
+# TAIFEX page (queried before ~15:00) parses to junk like net 0 / short 3 — treat
+# anything this small as "no data" so it's neither scored nor cached.
+FUTURES_MIN_PLAUSIBLE_SHORT = 1000
+FUTURES_BACKFILL_DAYS = 5  # re-try recent trading days the cron missed (asleep / rate-limited)
 
 
 def _load_futures_cache() -> dict[str, float]:
@@ -488,6 +493,8 @@ def fetch_futures_net_position(date_str: str) -> tuple[float | None, float | Non
         net_pos = float(nums[10].replace(",", ""))
     except ValueError:
         net_pos = None
+    if short_oi is not None and short_oi < FUTURES_MIN_PLAUSIBLE_SHORT:
+        return None, None
     return net_pos, short_oi
 
 
@@ -645,6 +652,8 @@ def fetch_futures_sentiment() -> dict:
 
     cache = _load_futures_cache()
     entry = _get_or_fetch_futures_entry(cache, date_str)
+    for d in close.index[-1 - FUTURES_BACKFILL_DAYS:-1]:
+        _get_or_fetch_futures_entry(cache, d.strftime("%Y/%m/%d"))
 
     result = {
         'net_pos':     entry.get('net')   if entry else None,
