@@ -371,6 +371,22 @@ def test_fetch_market_regime_ma60_gate_overrides_ma200_bucket():
     assert result['gate'] is True
     assert result['regime'] == '跌破季線'
     assert result['bonus'] == ta.MA60_GATE_BONUS
+    assert result['released'] is False   # sitting at its 20-day low: 0% rebound
+
+
+def test_fetch_market_regime_rebound_from_20d_low_releases_gate():
+    # uptrend → deep 18-day drop to 17,000 → bounce to 18,400 (+8.2% off the low)
+    # while still under MA60 (~18,870): the 谷底反彈 release lifts the gate.
+    closes = list(np.linspace(10_000, 20_000, 380)) + [17_000.0] * 18 + [18_400.0] * 2
+    df = pd.DataFrame({'Close': closes}, index=pd.bdate_range("2025-01-01", periods=400))
+    with mock.patch.object(ta.yf, "download", return_value=df):
+        result = ta.fetch_market_regime()
+    assert result['twii'] < result['ma60']
+    assert result['rebound'] >= ta.GATE_RELEASE_REBOUND
+    assert result['released'] is True
+    assert result['gate'] is False
+    assert result['regime'] != '跌破季線'
+    assert result['bonus'] != ta.MA60_GATE_BONUS
 
 
 def test_fetch_market_regime_flattens_multiindex():

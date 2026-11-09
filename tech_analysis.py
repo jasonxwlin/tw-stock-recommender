@@ -70,7 +70,7 @@ __all__ = [
     'fmt_report', 'fmt_summary_table',
     'analyze', 'analyze_institutional', 'fetch_institutional', 'fetch_market_regime',
     'fetch_macro_events', 'fetch_futures_sentiment', 'fetch_futures_net_position',
-    'MA60_GATE_BONUS', 'ma60_gate',
+    'MA60_GATE_BONUS', 'ma60_gate', 'GATE_RELEASE_WINDOW', 'GATE_RELEASE_REBOUND',
     'print_cli_error', 'main',
 ]
 
@@ -390,6 +390,13 @@ def fetch_macro_events(days_ahead: int = 7) -> list[dict]:
 # downtrend. 8-stock 3y backtest: maxDD -41%→-35%, Sharpe 1.01→1.12, 10/1–11/6
 # -26%→-8%, 3y return ~flat (+164%→+160%).
 MA60_GATE_BONUS = -0.30
+# Bottom-rebound release (2026-11 backtest, variant L): once TWII has bounced 8%
+# off its 20-day closing low the gate lifts even while still below MA60, so a
+# V-shaped recovery isn't sat out until MA60 is reclaimed. Same 8-stock 3y
+# backtest vs the plain gate: return +160%→+172%, Sharpe 1.12→1.14, maxDD
+# -34.8%→-35.6%, 10/1–11/6 unchanged at -8.1%.
+GATE_RELEASE_WINDOW  = 20
+GATE_RELEASE_REBOUND = 0.08
 
 
 def ma60_gate(tech_score: float, gated: bool) -> float:
@@ -404,7 +411,9 @@ def fetch_market_regime() -> dict:
     staying long in bull markets and reducing exposure in downtrends.
 
     Regime table:
-      TWII < MA60          →  跌破季線  bonus -0.30, bullish tech score ignored
+      TWII < MA60          →  跌破季線  bonus -0.30, bullish tech score ignored —
+                              unless TWII is ≥8% above its 20-day low (谷底反彈),
+                              in which case the MA200 bucket below applies
       TWII / MA200 ≥ 1.05  →  強多頭    bonus +0.25
       TWII / MA200 ≥ 1.00  →  多頭      bonus +0.15
       TWII / MA200 ≥ 0.95  →  中性      bonus  0.00
@@ -431,12 +440,15 @@ def fetch_market_regime() -> dict:
             regime, bonus = '中性',    0.00
         else:
             regime, bonus = '空頭',   -0.15
-        ma60_v = float(close.rolling(60).mean().iloc[-1])
-        gate   = current < ma60_v
+        ma60_v   = float(close.rolling(60).mean().iloc[-1])
+        rebound  = current / float(close.iloc[-GATE_RELEASE_WINDOW:].min()) - 1
+        released = current < ma60_v and rebound >= GATE_RELEASE_REBOUND
+        gate     = current < ma60_v and not released
         if gate:
             regime, bonus = '跌破季線', MA60_GATE_BONUS
         return {'regime': regime, 'bonus': bonus, 'twii': current, 'ma200': ma200_v,
-                'ma60': ma60_v, 'ratio': ratio, 'gate': gate}
+                'ma60': ma60_v, 'ratio': ratio, 'gate': gate,
+                'rebound': rebound, 'released': released}
     except Exception:
         return {'regime': '中性', 'bonus': 0.0}
 

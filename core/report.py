@@ -99,6 +99,10 @@ def _fmt_market(r: dict, w: int) -> list[str]:
         twii_str = f"TWII {regime['twii']:.0f} / MA200 {regime['ma200']:.0f}" if regime.get('twii') else ""
         if regime.get('ma60'):
             twii_str += f" / MA60 {regime['ma60']:.0f}"
+        if regime.get('released'):
+            twii_str += f"  (跌破季線但已自20日低點反彈{regime['rebound']:.1%}，解除閘門)"
+        elif regime.get('gate') and regime.get('rebound') is not None:
+            twii_str += f"  (自20日低點反彈{regime['rebound']:.1%}，達8%解除閘門)"
         bonus_str = f"  分數調整 {regime['bonus']:+.2f}" if regime.get('bonus') is not None else ""
         lines.append(f"    台股趨勢: {twii_str}  [{regime['regime']}]{bonus_str}")
     if vix:
