@@ -42,6 +42,8 @@ from tech_analysis import (  # pylint: disable=wrong-import-position
     baseline_stats,
     resolve_symbol,
     MA60_GATE_BONUS,
+    GATE_RELEASE_REBOUND,
+    GATE_RELEASE_WINDOW,
     ma60_gate,
 )
 
@@ -75,7 +77,8 @@ def fetch_twii_regime(years: float = 3.6, end_date: datetime | None = None) -> p
       TWII / MA200 ≥ 1.00  → +0.15  (多頭)
       TWII / MA200 ≥ 0.95  →  0.00  (中性)
       TWII / MA200 <  0.95 → -0.15  (空頭)
-      TWII < MA60          → MA60_GATE_BONUS (跌破季線; overrides the above)
+      TWII < MA60          → MA60_GATE_BONUS (跌破季線; overrides the above),
+                             unless ≥8% above the 20-day low (谷底反彈 release)
     Fetches extra history so MA200 is valid from the start of the sim period.
     """
     end   = end_date or datetime.now()
@@ -95,7 +98,9 @@ def fetch_twii_regime(years: float = 3.6, end_date: datetime | None = None) -> p
     bonus[(ratio >= 0.95) & (ratio < 1.00)] = 0.0
     bonus[ratio < 0.95]  = -0.15
     bonus[ma200.isna()]  = 0.0   # not enough history yet
-    bonus[close < close.rolling(60).mean()] = MA60_GATE_BONUS  # same gate as tech_analysis
+    # same gate + bottom-rebound release as tech_analysis.fetch_market_regime()
+    released = close >= close.rolling(GATE_RELEASE_WINDOW).min() * (1 + GATE_RELEASE_REBOUND)
+    bonus[(close < close.rolling(60).mean()) & ~released] = MA60_GATE_BONUS
     return bonus
 
 
