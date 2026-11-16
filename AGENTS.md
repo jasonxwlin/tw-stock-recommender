@@ -75,7 +75,8 @@ Read each script's **full** output. Never truncate with `tail` — the 7-day 重
   When TWII is below its MA60 the regime is 跌破季線: bonus −0.30 and the bullish part of the tech
   score is dropped (the report marks it 「大盤跌破季線，看多技術分不計」) — so expect 減碼 across the
   board in a market-wide downtrend even when individual stocks look oversold. The gate lifts early
-  (谷底反彈) once TWII is ≥8% above its 20-day closing low; the report's 台股趨勢 line shows the
+  (谷底反彈) once TWII is ≥8% above its 20-day closing low (regime 谷底反彈, bonus capped at 0
+  until MA60 is reclaimed); the report's 台股趨勢 line shows the
   current rebound % — mention how close it is to 8% when the gate is on.
 - Thresholds: ≥ +0.60 強力加碼 🚀 · ≥ +0.25 加碼 ↑ · ≤ −0.25 減碼 ↓ (≤ −0.40 in 強多頭) · ≤ −0.60 強力減碼 ⚠ (≤ −0.80 in 強多頭) · otherwise 持平 →.
 - Tech score: each active ★ condition contributes its backtested excess edge × sample confidence;
