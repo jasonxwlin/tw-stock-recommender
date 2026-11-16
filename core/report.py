@@ -100,7 +100,7 @@ def _fmt_market(r: dict, w: int) -> list[str]:
         if regime.get('ma60'):
             twii_str += f" / MA60 {regime['ma60']:.0f}"
         if regime.get('released'):
-            twii_str += f"  (跌破季線但已自20日低點反彈{regime['rebound']:.1%}，解除閘門)"
+            twii_str += f"  (跌破季線但已自20日低點反彈{regime['rebound']:.1%}，解除閘門；季線下大盤加分上限 0)"
         elif regime.get('gate') and regime.get('rebound') is not None:
             twii_str += f"  (自20日低點反彈{regime['rebound']:.1%}，達8%解除閘門)"
         bonus_str = f"  分數調整 {regime['bonus']:+.2f}" if regime.get('bonus') is not None else ""

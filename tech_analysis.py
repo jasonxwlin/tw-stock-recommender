@@ -413,7 +413,8 @@ def fetch_market_regime() -> dict:
     Regime table:
       TWII < MA60          →  跌破季線  bonus -0.30, bullish tech score ignored —
                               unless TWII is ≥8% above its 20-day low (谷底反彈),
-                              in which case the MA200 bucket below applies
+                              in which case the MA200 bucket below applies,
+                              capped at 0 (no bull bonus while still under MA60)
       TWII / MA200 ≥ 1.05  →  強多頭    bonus +0.25
       TWII / MA200 ≥ 1.00  →  多頭      bonus +0.15
       TWII / MA200 ≥ 0.95  →  中性      bonus  0.00
@@ -446,6 +447,10 @@ def fetch_market_regime() -> dict:
         gate     = current < ma60_v and not released
         if gate:
             regime, bonus = '跌破季線', MA60_GATE_BONUS
+        elif released and bonus > 0:
+            # bounced off the low but still under MA60: don't hand out the bull
+            # bonus (or 強多頭's looser thresholds) just because MA200 lags
+            regime, bonus = '谷底反彈', 0.0
         return {'regime': regime, 'bonus': bonus, 'twii': current, 'ma200': ma200_v,
                 'ma60': ma60_v, 'ratio': ratio, 'gate': gate,
                 'rebound': rebound, 'released': released}

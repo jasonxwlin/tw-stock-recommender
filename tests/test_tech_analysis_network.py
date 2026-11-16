@@ -385,8 +385,9 @@ def test_fetch_market_regime_rebound_from_20d_low_releases_gate():
     assert result['rebound'] >= ta.GATE_RELEASE_REBOUND
     assert result['released'] is True
     assert result['gate'] is False
-    assert result['regime'] != '跌破季線'
-    assert result['bonus'] != ta.MA60_GATE_BONUS
+    assert result['ratio'] >= 1.0          # MA200 bucket alone would give a bull bonus...
+    assert result['regime'] == '谷底反彈'   # ...but under MA60 it's capped at 0
+    assert result['bonus'] == 0.0
 
 
 def test_fetch_market_regime_flattens_multiindex():
