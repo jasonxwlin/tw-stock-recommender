@@ -146,6 +146,16 @@ def test_analyze_recommendation_thresholds_neutral_regime():
     assert _analyze_with_fixed_tech_score(-0.59) == '減碼'
 
 
+def test_ma60_gate_state_hysteresis():
+    # flat 100 (MA60≈100) → drop to 80 → 87 (+8.75%: release) → 85 (+6.25%: stays
+    # released, ≥5%) → 83 (+3.75%: re-gate) → 85 (+6.25% but <8%: stays gated)
+    closes = [100.0] * 100 + [80.0, 87.0, 85.0, 83.0, 85.0]
+    s = ta.ma60_gate_state(pd.Series(closes, index=pd.bdate_range("2025-01-01", periods=len(closes))))
+    assert list(s['gate'].iloc[-5:])     == [True, False, False, True, True]
+    assert list(s['released'].iloc[-5:]) == [False, True, True, False, False]
+    assert not s['gate'].iloc[:100].any()   # above/at MA60 → never gated
+
+
 def test_ma60_gate_drops_bullish_tech_score_only():
     assert ta.ma60_gate(1.5, gated=True) == 0.0
     assert ta.ma60_gate(-0.4, gated=True) == -0.4

@@ -71,6 +71,7 @@ __all__ = [
     'analyze', 'analyze_institutional', 'fetch_institutional', 'fetch_market_regime',
     'fetch_macro_events', 'fetch_futures_sentiment', 'fetch_futures_net_position',
     'MA60_GATE_BONUS', 'ma60_gate', 'GATE_RELEASE_WINDOW', 'GATE_RELEASE_REBOUND',
+    'GATE_REENGAGE_REBOUND', 'ma60_gate_state',
     'print_cli_error', 'main',
 ]
 
@@ -397,6 +398,26 @@ MA60_GATE_BONUS = -0.30
 # -34.8%→-35.6%, 10/1–11/6 unchanged at -8.1%.
 GATE_RELEASE_WINDOW  = 20
 GATE_RELEASE_REBOUND = 0.08
+# Hysteresis: once released, stay released until the rebound falls back under
+# 5% (or MA60 is reclaimed), so wobbling around 8% doesn't flip 減碼↔加碼 day to
+# day (2026-11-13 released at 10%, 11-16 re-gated at 6.2%). 3y backtest: ~no
+# change (+171.5%→+171.4%, gate flips 33→33 — most flips are MA60 crossings).
+GATE_REENGAGE_REBOUND = 0.05
+
+
+def ma60_gate_state(close: pd.Series) -> pd.DataFrame:
+    """Walk TWII closes through the MA60 gate state machine (with hysteresis).
+    Returns per-day bool columns 'gate'/'released' and float 'rebound' (vs the
+    20-day closing low). Shared by fetch_market_regime() and backtest_annual."""
+    ma60    = close.rolling(60).mean()
+    rebound = close / close.rolling(GATE_RELEASE_WINDOW).min() - 1
+    gate, released, rel = [], [], False
+    for c, m, rb in zip(close, ma60, rebound):
+        below = not pd.isna(m) and c < m
+        rel   = below and rb >= (GATE_REENGAGE_REBOUND if rel else GATE_RELEASE_REBOUND)
+        released.append(rel)
+        gate.append(below and not rel)
+    return pd.DataFrame({'gate': gate, 'released': released, 'rebound': rebound}, index=close.index)
 
 
 def ma60_gate(tech_score: float, gated: bool) -> float:
@@ -442,9 +463,10 @@ def fetch_market_regime() -> dict:
         else:
             regime, bonus = '空頭',   -0.15
         ma60_v   = float(close.rolling(60).mean().iloc[-1])
-        rebound  = current / float(close.iloc[-GATE_RELEASE_WINDOW:].min()) - 1
-        released = current < ma60_v and rebound >= GATE_RELEASE_REBOUND
-        gate     = current < ma60_v and not released
+        state    = ma60_gate_state(close).iloc[-1]
+        rebound  = float(state['rebound'])
+        released = bool(state['released'])
+        gate     = bool(state['gate'])
         if gate:
             regime, bonus = '跌破季線', MA60_GATE_BONUS
         elif released and bonus > 0:
