@@ -113,8 +113,63 @@ def _fetch_pe_pb_tpex_day(symbol: str, day: date) -> dict | None:
     return None
 
 
+# Official OpenAPI snapshots: ONE request returns every listed (TWSE) / OTC (TPEx)
+# stock's latest P/E, P/B and dividend yield, with its date — no per-stock calls,
+# so a multi-stock run can't trip TWSE's anti-flood (HTTP 428) the way the
+# per-month BWIBBU queries below do (2382/2449 often came back empty, and others
+# silently fell back to months-old cached values).
+_OPENAPI_PE = {
+    False: ("https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL",
+            'Code', 'PEratio', 'PBratio', 'DividendYield'),
+    True:  ("https://www.tpex.org.tw/openapi/v1/tpex_mainboard_peratio_analysis",
+            'SecuritiesCompanyCode', 'PriceEarningRatio', 'PriceBookRatio', 'YieldRatio'),
+}
+_OPENAPI_PE_CACHE: dict[bool, dict[str, dict]] = {}  # is_otc → {code: row}, fetched once per process
+
+
+def _num(v) -> float | None:
+    try:
+        return float(str(v).replace(',', ''))
+    except (TypeError, ValueError):
+        return None
+
+
+def _roc_date_to_iso(s: str) -> str | None:
+    """'1151117' (ROC yyyMMdd) → '2026-11-17'."""
+    s = str(s).strip()
+    if len(s) != 7 or not s.isdigit():
+        return None
+    return f"{int(s[:3]) + 1911}-{s[3:5]}-{s[5:]}"
+
+
+def _fetch_pe_pb_openapi(symbol: str, is_otc: bool) -> dict | None:
+    if is_otc not in _OPENAPI_PE_CACHE:
+        url, code_k, pe_k, pb_k, dy_k = _OPENAPI_PE[is_otc]
+        table: dict[str, dict] = {}
+        try:
+            for row in requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15).json():
+                pe, pb = _num(row.get(pe_k)), _num(row.get(pb_k))
+                if pe is None and pb is None:
+                    continue
+                table[str(row.get(code_k, '')).strip()] = {
+                    'pe': pe, 'pb': pb, 'dy': _num(row.get(dy_k)),
+                    'as_of': _roc_date_to_iso(row.get('Date', '')), 'stale': False,
+                }
+        except Exception:
+            pass
+        _OPENAPI_PE_CACHE[is_otc] = table
+    return _OPENAPI_PE_CACHE[is_otc].get(symbol)
+
+
 def fetch_valuation_snapshot(symbol: str, is_otc: bool, months: int = 12) -> dict:
-    """Best-effort: current P/E, P/B only (no percentile — a partially-filled
+    """Best-effort current P/E, P/B, dividend yield. Official OpenAPI snapshot first;
+    if that's unavailable, fall back to the per-month BWIBBU history, marked stale
+    with the month the value is from."""
+    return _fetch_pe_pb_openapi(symbol, is_otc) or _valuation_from_monthly_history(symbol, is_otc, months)
+
+
+def _valuation_from_monthly_history(symbol: str, is_otc: bool, months: int = 12) -> dict:
+    """Fallback: current P/E, P/B only (no percentile — a partially-filled
     cache would make it misleading). Trailing `months` of history still builds
     up in the cache in the background: one new past month is fetched per call,
     plus the current month (always refreshed since it's still accumulating).
@@ -132,7 +187,7 @@ def fetch_valuation_snapshot(symbol: str, is_otc: bool, months: int = 12) -> dic
             return [row] if row else []
         return _fetch_pe_pb_twse_month(symbol, d)
 
-    pe_hist, pb_hist = [], []
+    last, last_ym = None, None   # newest row seen, and the month it came from
     for d in reversed(_months_back(months)):
         ym = d.strftime('%Y-%m')
         if ym == current_ym:
@@ -147,15 +202,14 @@ def fetch_valuation_snapshot(symbol: str, is_otc: bool, months: int = 12) -> dic
                 dirty = True
         else:
             rows = []
-        for row in rows:
-            pe_hist.append(row['pe'])
-            pb_hist.append(row['pb'])
+        if rows:
+            last, last_ym = rows[-1], ym
 
     if dirty:
         _save_valuation_cache(cache)
-    if not pe_hist:
+    if last is None:
         return {}
-    return {'pe': pe_hist[-1], 'pb': pb_hist[-1] if pb_hist else None}
+    return {'pe': last['pe'], 'pb': last.get('pb'), 'as_of': last_ym, 'stale': last_ym != current_ym}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -256,10 +310,16 @@ def fmt_report(symbol: str, company_name: str, r: dict) -> str:
     lines.append("-" * W)
     val = r.get('valuation') or {}
     if val:
-        lines.append("  估值:")
-        lines.append(f"    本益比: {val['pe']:.2f}")
+        as_of = val.get('as_of')
+        if val.get('stale'):
+            lines.append(f"  估值: ⚠ 即時資料取得失敗，以下為 {as_of} 的舊資料")
+        else:
+            lines.append(f"  估值:{f'（資料日期 {as_of}）' if as_of else ''}")
+        lines.append(f"    本益比: {val['pe']:.2f}" if val.get('pe') is not None else "    本益比: N/A（虧損或無資料）")
         if val.get('pb') is not None:
             lines.append(f"    股價淨值比: {val['pb']:.2f}")
+        if val.get('dy') is not None:
+            lines.append(f"    殖利率: {val['dy']:.2f}%")
     else:
         lines.append("  估值: 資料無法取得")
 
