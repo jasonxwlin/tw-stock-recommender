@@ -41,7 +41,8 @@ Read each script's **full** output. Never truncate with `tail` — the 7-day 重
    - Multiple stocks: a short 觀察 list of what stands out.
    - Flag data problems honestly: e.g. when 近5日 equals 今日 for most stocks, the TWSE T86 feed
      probably returned only one day — say 籌碼分 is unreliable.
-4. **基本面（僅供參考）** — 本益比, 股價淨值比, latest 月營收年增, latest 單季 ROE／毛利率. No recommendation.
+4. **基本面（僅供參考）** — 本益比, 股價淨值比, 殖利率, latest 月營收年增, latest 單季 ROE／毛利率. No recommendation.
+   If the script marks valuation 「舊資料」 (OpenAPI unavailable), say the P/E is stale and from which month — don't present it as current.
 5. **消息面（僅供參考）** — per stock, a block that **starts** with the 傾向 label plus one concrete sentence,
    then the cited headlines as markdown links (`news.py` prints each headline's URL under it):
 

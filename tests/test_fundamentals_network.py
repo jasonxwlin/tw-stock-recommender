@@ -50,6 +50,37 @@ def test_fetch_pe_pb_tpex_day_returns_none_when_no_match_or_exception():
         assert f._fetch_pe_pb_tpex_day('1234', date(2026, 1, 5)) is None
 
 
+# ── fetch_valuation_snapshot: official OpenAPI snapshot ──────────────────────
+
+def test_openapi_snapshot_twse_and_tpex(monkeypatch):
+    monkeypatch.setattr(f, "_OPENAPI_PE_CACHE", {})
+    twse = [{'Date': '1151117', 'Code': '2382', 'Name': '廣達', 'PEratio': '10.71', 'DividendYield': '5.94', 'PBratio': '3.13'},
+            {'Date': '1151117', 'Code': '9999', 'Name': '虧損股', 'PEratio': '', 'DividendYield': '', 'PBratio': ''}]
+    tpex = [{'Date': '1151117', 'SecuritiesCompanyCode': '6274', 'PriceEarningRatio': '27.70', 'YieldRatio': '0.95', 'PriceBookRatio': '8.41'}]
+    with mock.patch.object(f.requests, "get", side_effect=[_resp(json_data=twse), _resp(json_data=tpex)]) as m:
+        assert f.fetch_valuation_snapshot('2382', is_otc=False) == {
+            'pe': 10.71, 'pb': 3.13, 'dy': 5.94, 'as_of': '2026-11-17', 'stale': False}
+        assert f.fetch_valuation_snapshot('6274', is_otc=True)['pe'] == 27.70
+        assert f._fetch_pe_pb_openapi('9999', is_otc=False) is None   # no PE/PB at all → skipped
+        f.fetch_valuation_snapshot('2382', is_otc=False)               # served from the per-process table
+    assert m.call_count == 2   # one request per market, not per stock
+
+
+def test_openapi_failure_falls_back_to_monthly_history_marked_stale(monkeypatch):
+    monkeypatch.setattr(f, "_OPENAPI_PE_CACHE", {})
+    fallback = {'pe': 46.01, 'pb': 14.05, 'as_of': '2026-01', 'stale': True}
+    with mock.patch.object(f.requests, "get", side_effect=Exception("boom")), \
+         mock.patch.object(f, "_valuation_from_monthly_history", return_value=fallback):
+        assert f.fetch_valuation_snapshot('2383', is_otc=False) == fallback
+
+
+def test_fmt_report_marks_stale_and_shows_date_and_yield():
+    stale = f.fmt_report('2383', '台光電', {'valuation': {'pe': 46.0, 'pb': 14.0, 'as_of': '2026-01', 'stale': True}, 'revenue': [], 'quality': []})
+    assert '舊資料' in stale and '2026-01' in stale
+    live = f.fmt_report('2382', '廣達', {'valuation': {'pe': None, 'pb': 3.1, 'dy': 5.9, 'as_of': '2026-11-17', 'stale': False}, 'revenue': [], 'quality': []})
+    assert '資料日期 2026-11-17' in live and 'N/A' in live and '殖利率: 5.90%' in live
+
+
 # ── fetch_valuation_snapshot: OTC path + empty-history path ─────────────────
 
 def test_fetch_valuation_snapshot_otc_path_uses_tpex_fetcher(tmp_path):
@@ -57,8 +88,8 @@ def test_fetch_valuation_snapshot_otc_path_uses_tpex_fetcher(tmp_path):
     f._VALUATION_CACHE_FILE = tmp_path / "cache.json"
     try:
         with mock.patch.object(f, "_fetch_pe_pb_tpex_day", return_value={'pe': 20.0, 'pb': 2.0}) as m:
-            result = f.fetch_valuation_snapshot('1234', is_otc=True, months=1)
-        assert result == {'pe': 20.0, 'pb': 2.0}
+            result = f._valuation_from_monthly_history('1234', is_otc=True, months=1)
+        assert (result['pe'], result['pb'], result['stale']) == (20.0, 2.0, False)
         assert m.called
     finally:
         f._VALUATION_CACHE_FILE = orig_cache_file
@@ -69,7 +100,7 @@ def test_fetch_valuation_snapshot_returns_empty_when_no_history(tmp_path):
     f._VALUATION_CACHE_FILE = tmp_path / "cache.json"
     try:
         with mock.patch.object(f, "_fetch_pe_pb_twse_month", return_value=[]):
-            assert f.fetch_valuation_snapshot('2330', is_otc=False, months=1) == {}
+            assert f._valuation_from_monthly_history('2330', is_otc=False, months=1) == {}
     finally:
         f._VALUATION_CACHE_FILE = orig_cache_file
 

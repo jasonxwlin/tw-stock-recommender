@@ -56,15 +56,15 @@ def test_valuation_cache_backfills_one_past_month_per_call():
     f._fetch_pe_pb_twse_month = lambda symbol, d: calls.append(d) or [{'pe': 10.0 + d.month, 'pb': 1.0}]
     try:
         # months=3 → 2 past months + the current month.
-        f.fetch_valuation_snapshot('TEST', is_otc=False, months=3)
+        f._valuation_from_monthly_history('TEST', is_otc=False, months=3)
         assert len(calls) == 2  # 1 new past month + current month, not all 3 at once
         assert len(f._load_valuation_cache()['TEST']) == 1
 
-        f.fetch_valuation_snapshot('TEST', is_otc=False, months=3)
+        f._valuation_from_monthly_history('TEST', is_otc=False, months=3)
         assert len(calls) == 4  # the other past month + current month again
         assert len(f._load_valuation_cache()['TEST']) == 2  # both past months now cached
 
-        f.fetch_valuation_snapshot('TEST', is_otc=False, months=3)
+        f._valuation_from_monthly_history('TEST', is_otc=False, months=3)
         assert len(calls) == 5  # both past months cached — only current month re-fetched
         assert len(f._load_valuation_cache()['TEST']) == 2
     finally:
@@ -78,8 +78,8 @@ def test_valuation_snapshot_has_no_percentile_field():
     f._VALUATION_CACHE_FILE = Path(tempfile.mkdtemp()) / "test_valuation_cache.json"
     f._fetch_pe_pb_twse_month = lambda symbol, d: [{'pe': 12.3, 'pb': 4.5}]
     try:
-        result = f.fetch_valuation_snapshot('TEST', is_otc=False, months=1)
-        assert result == {'pe': 12.3, 'pb': 4.5}
+        result = f._valuation_from_monthly_history('TEST', is_otc=False, months=1)
+        assert result == {'pe': 12.3, 'pb': 4.5, 'as_of': date.today().strftime('%Y-%m'), 'stale': False}
     finally:
         f._fetch_pe_pb_twse_month = orig_fetch
         f._VALUATION_CACHE_FILE = orig_cache_file
